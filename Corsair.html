@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CORSAIR · Open universe</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c1:#01cdfe;--c2:#ff71ce;--c3:#05ffa1;--c4:#fff951;--c5:#b967ff;
+  --neon:#01cdfe;--pink:#ff71ce;--green:#05ffa1;--yellow:#fff951;--purple:#b967ff;
+  --bg:#000008;--panel:rgba(0,0,12,0.92);
+}
+body{background:var(--bg);overflow:hidden;font-family:'Courier New',monospace;user-select:none;color:var(--neon)}
+canvas#main{display:block;position:fixed;inset:0}
+#crt{position:fixed;inset:0;pointer-events:none;z-index:90;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0.08) 0px,rgba(0,0,0,0.08) 1px,transparent 1px,transparent 3px);
+  animation:scan 8s linear infinite}
+@keyframes scan{0%{background-position:0 0}100%{background-position:0 300px}}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:89;
+  box-shadow:inset 0 0 200px rgba(0,0,0,0.85),inset 0 0 60px rgba(0,0,0,0.5)}
+#dmgflash{position:fixed;inset:0;pointer-events:none;z-index:88;transition:opacity 0.15s;opacity:0;background:rgba(255,0,0,0.3)}
+.hud{position:fixed;pointer-events:none;z-index:20;font-size:11px;letter-spacing:0.5px;line-height:1.7}
+.hbox{background:var(--panel);border:1px solid rgba(1,205,254,0.25);padding:8px 10px}
+.hl{color:#555}.hv{color:#fff;font-weight:bold}
+.hc1{color:var(--c1)} .hc2{color:var(--c2)} .hc3{color:var(--c3)} .hc4{color:var(--c4)} .hc5{color:var(--c5)}
+#hud-tl{top:14px;left:14px;width:200px}
+#hud-tl h1{font-size:15px;letter-spacing:4px;color:var(--purple);text-shadow:0 0 10px var(--purple);margin-bottom:6px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1px}
+.bar-row{display:flex;align-items:center;gap:5px;margin:2px 0}
+.bar-lbl{font-size:10px;color:#666;width:38px;text-align:right;flex-shrink:0}
+.bar-bg{flex:1;height:5px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1)}
+.bar-fill{height:100%;transition:width 0.25s}
+#hud-tr{top:14px;right:14px;width:210px;text-align:right}
+#tgt-name{font-size:14px;color:#fff;letter-spacing:1px}
+#tgt-type{color:#666;font-size:10px}
+#tgt-dist{color:var(--c3);font-size:11px}
+#tgt-hint{color:var(--c4);font-size:10px;min-height:14px;margin-top:2px}
+.tgt-bar-row{display:flex;align-items:center;gap:5px;margin:2px 0;justify-content:flex-end}
+.tgt-bar-bg{width:100px;height:5px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1)}
+.tgt-bar-fill{height:100%;background:var(--c2)}
+#hud-bc{bottom:16px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:all;max-width:640px}
+#msg-line{font-size:12px;color:var(--c3);text-shadow:0 0 8px var(--c3);min-height:16px;letter-spacing:1px}
+#obj-line{font-size:10px;color:var(--c4);min-height:14px;margin-top:2px}
+#hint-line{font-size:9px;color:#333;margin-top:3px}
+#cross{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--c3);font-size:18px;pointer-events:none;z-index:21;text-shadow:0 0 6px var(--c3)}
+#hud-bl{bottom:16px;left:14px;width:220px;pointer-events:all}
+#dest-hdr{color:var(--purple);letter-spacing:2px;font-size:10px;margin-bottom:5px}
+#dest-search{width:100%;background:rgba(0,0,10,0.9);border:1px solid rgba(1,205,254,0.3);color:var(--c1);
+  font-family:inherit;font-size:10px;padding:3px 6px;outline:none;margin-bottom:4px}
+#dest-search:focus{border-color:var(--c1)}
+#dest-list{max-height:160px;overflow-y:auto}
+#dest-list::-webkit-scrollbar{width:4px}
+#dest-list::-webkit-scrollbar-thumb{background:rgba(1,205,254,0.3)}
+.di{padding:3px 5px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);font-size:10px}
+.di:hover,.di.sel{background:rgba(1,205,254,0.12)}
+.di.sel{border-left:2px solid var(--c1)}
+.di-name{color:#ccc}.di-sub{color:#444;font-size:9px}
+#hud-br{bottom:16px;right:14px;padding:0}
+#radar{display:block}
+#hud-tc{top:14px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none}
+#wpl{position:fixed;inset:0;pointer-events:none;z-index:22}
+.wp{position:absolute;font-family:'Courier New',monospace;font-size:10px;white-space:nowrap;transform:translate(-50%,-50%)}
+.wp-inner{display:inline-block;padding:1px 6px;border-radius:2px;background:rgba(0,0,0,0.7);border:1px solid currentColor}
+.cpop{position:fixed;font-size:13px;font-family:'Courier New',monospace;pointer-events:none;
+  animation:popfloat 1.6s ease-out forwards;z-index:200;text-shadow:0 0 10px currentColor}
+@keyframes popfloat{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+#cv-alert{position:fixed;top:48%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(0,0,0,0.9);border:1px solid var(--yellow);color:var(--yellow);
+  padding:8px 18px;font-size:12px;letter-spacing:2px;text-shadow:0 0 10px var(--yellow);
+  display:none;z-index:80;pointer-events:none}
+#overlay{position:fixed;inset:0;z-index:400;display:none;background:rgba(0,0,8,0.96);flex-direction:column}
+#overlay.open{display:flex}
+#overlay-tabs{display:flex;border-bottom:1px solid rgba(1,205,254,0.2);flex-shrink:0}
+.ovl-tab{padding:10px 18px;cursor:pointer;font-size:11px;letter-spacing:2px;color:#444;border-right:1px solid rgba(1,205,254,0.1)}
+.ovl-tab:hover{color:#888}
+.ovl-tab.active{color:var(--c1);border-bottom:1px solid var(--c1);margin-bottom:-1px}
+#overlay-body{flex:1;overflow:hidden;display:flex}
+.ovl-page{display:none;flex:1;overflow-y:auto;padding:18px 22px}
+.ovl-page.active{display:block}
+.ovl-page::-webkit-scrollbar{width:4px}
+.ovl-page::-webkit-scrollbar-thumb{background:rgba(1,205,254,0.2)}
+#overlay-close{padding:10px 16px;cursor:pointer;font-size:11px;color:#444;letter-spacing:2px;margin-left:auto}
+#overlay-close:hover{color:#fff}
+.ovl-h{font-size:13px;color:var(--c1);letter-spacing:2px;margin-bottom:12px;border-bottom:1px solid rgba(1,205,254,0.15);padding-bottom:5px}
+.ovl-p{color:#888;font-size:11px;line-height:1.8;margin-bottom:10px}
+.ovl-btn{background:rgba(1,205,254,0.06);border:1px solid rgba(1,205,254,0.3);color:#aaa;
+  padding:5px 12px;cursor:pointer;font-family:inherit;font-size:10px;margin:2px 4px 2px 0;letter-spacing:1px}
+.ovl-btn:hover{background:rgba(1,205,254,0.18);color:#fff}
+.ovl-btn.active{background:rgba(1,205,254,0.25);border-color:var(--c1);color:#fff}
+.faction-card{border:1px solid rgba(255,255,255,0.1);padding:10px;margin-bottom:8px;background:rgba(0,0,10,0.6)}
+.fc-name{font-size:13px;letter-spacing:2px;margin-bottom:4px}
+.fc-rep{font-size:11px;margin-bottom:6px}
+.fc-desc{font-size:10px;color:#555;line-height:1.7}
+.rep-bar-wrap{height:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);margin:4px 0;position:relative}
+.rep-bar-center{position:absolute;left:50%;top:-3px;width:1px;height:12px;background:rgba(255,255,255,0.25)}
+.rep-bar-fill{position:absolute;height:100%;top:0;transition:all 0.4s}
+.log-entry{border-bottom:1px solid rgba(255,255,255,0.04);padding:4px 0;font-size:10px;color:#777}
+.log-entry .log-time{color:#333;font-size:9px}
+.log-entry .log-cat{font-size:9px;padding:0 4px;margin-right:4px;border-radius:1px}
+.mission-card{border:1px solid rgba(255,255,255,0.1);padding:10px;margin-bottom:8px;background:rgba(0,0,10,0.6)}
+.mc-title{font-size:11px;color:#fff;margin-bottom:4px;letter-spacing:1px}
+.mc-desc{font-size:10px;color:#555;margin-bottom:6px;line-height:1.65}
+.mc-reward{font-size:10px;color:var(--c4);margin-bottom:6px}
+.mc-status{font-size:9px;margin-top:4px}
+#gmap{width:100%;height:calc(100% - 40px);display:block;background:#000008;border:1px solid rgba(1,205,254,0.1)}
+
+/* PLANET DIALOG */
+#pdialog{position:fixed;inset:0;z-index:450;display:none;background:rgba(0,0,8,0.97);flex-direction:column}
+#pdialog.open{display:flex}
+#pdlg-art{flex:1;position:relative;overflow:hidden;border-bottom:1px solid rgba(1,205,254,0.2)}
+#pdlg-bg{position:absolute;inset:0;font-size:9px;line-height:1.15;overflow:hidden;white-space:pre;padding:10px;pointer-events:none;letter-spacing:0.05em;opacity:0.12}
+#pdlg-npc{position:absolute;bottom:0;left:48px;font-size:13px;line-height:1.25;white-space:pre;letter-spacing:0.08em}
+#pdlg-info{position:absolute;top:18px;right:36px;width:400px;font-size:11px;line-height:1.65;display:flex;flex-direction:column;height:calc(100% - 36px)}
+#pdlg-pname{font-size:16px;letter-spacing:3px;margin-bottom:3px}
+#pdlg-stats{font-size:10px;color:#888;margin-bottom:8px;line-height:1.6;background:rgba(0,0,12,0.7);padding:6px 8px;border:1px solid rgba(255,255,255,0.06)}
+#pdlg-desc{font-size:11px;color:#9ecfdf;margin-bottom:10px;line-height:1.65}
+/* Planet dialog tabs */
+#pdlg-tabbar{display:flex;border-bottom:1px solid rgba(1,205,254,0.15);margin-bottom:8px;flex-shrink:0}
+.pdlg-tab{background:transparent;border:none;border-bottom:2px solid transparent;color:#444;
+  font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 10px;cursor:pointer;margin-bottom:-1px}
+.pdlg-tab.active{color:var(--c1);border-bottom-color:var(--c1)}
+.pdlg-tab:hover:not(.active){color:#888}
+#pdlg-panels{flex:1;overflow-y:auto;min-height:0}
+#pdlg-panels::-webkit-scrollbar{width:4px}
+#pdlg-panels::-webkit-scrollbar-thumb{background:rgba(1,205,254,0.2)}
+.pdlg-panel{display:none}
+.pdlg-panel.active{display:block}
+.pdlg-opt{padding:7px 12px;border:1px solid rgba(1,205,254,0.25);background:rgba(1,205,254,0.04);
+  cursor:pointer;font-family:'Courier New',monospace;font-size:10px;text-align:left;letter-spacing:0.5px;color:#bcd;
+  width:100%;display:block;margin-bottom:4px}
+.pdlg-opt:hover{background:rgba(1,205,254,0.15);border-color:rgba(1,205,254,0.6);color:#fff}
+.pdlg-opt.disabled{opacity:0.3;cursor:default;pointer-events:none;border-style:dashed}
+.pdlg-opt.warn{border-color:rgba(255,113,206,0.4);color:#ff9de0}
+.pdlg-opt.warn:hover{background:rgba(255,113,206,0.12)}
+.pdlg-lbl{font-size:9px;color:#333;letter-spacing:2px;margin:8px 0 4px;text-transform:uppercase}
+#pdlg-bot{padding:10px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+#pdlg-frep{font-size:10px}
+#pdlg-close{background:transparent;border:1px solid rgba(255,255,255,0.15);color:#555;
+  cursor:pointer;font-family:inherit;font-size:10px;padding:5px 14px;letter-spacing:1px}
+#pdlg-close:hover{border-color:#fff;color:#fff}
+#notif{position:fixed;top:60px;right:14px;z-index:350;pointer-events:none;width:260px}
+.notif-item{background:rgba(0,0,12,0.95);border-left:2px solid var(--c4);padding:7px 10px;
+  font-size:10px;color:#ccc;margin-bottom:6px;animation:notifIn 0.3s ease-out;letter-spacing:0.5px}
+@keyframes notifIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+#hyperfx{position:fixed;inset:0;z-index:87;pointer-events:none;opacity:0;background:linear-gradient(to right,rgba(1,205,254,0.15),transparent,rgba(185,103,255,0.15));transition:opacity 0.3s}
+#rank-display{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:21;text-align:center;pointer-events:none}
+#rank-name{font-size:9px;color:#333;letter-spacing:3px}
+#rank-bar-wrap{width:160px;height:3px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);margin:3px auto}
+#rank-bar-fill{height:100%;background:var(--yellow);transition:width 0.5s}
+#rank-xp{font-size:9px;color:#333}
+#bounty-hud{position:fixed;top:180px;left:14px;pointer-events:none;z-index:21}
+#bounty-count{font-size:10px;color:var(--c2);display:none}
+#sys-enter{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:13px;letter-spacing:3px;color:var(--c1);text-shadow:0 0 20px var(--c1);
+  pointer-events:none;z-index:50;opacity:0;transition:opacity 0.4s}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<canvas id="main"></canvas>
+<div id="crt"></div>
+<div id="vignette"></div>
+<div id="dmgflash"></div>
+<div id="hyperfx"></div>
+<div id="cross">+</div>
+<div id="cv-alert"></div>
+<div id="notif"></div>
+<div id="wpl"></div>
+<div id="sys-enter"></div>
+
+<div id="rank-display">
+  <div id="rank-name">DRIFTER</div>
+  <div id="rank-bar-wrap"><div id="rank-bar-fill" style="width:0%"></div></div>
+  <div id="rank-xp">0 XP</div>
+</div>
+
+<div class="hud hbox" id="hud-tl">
+  <h1>CORSAIR</h1>
+  <div class="stat-row"><span class="hl">THRUST</span><span class="hv" id="v-thrust">0%</span></div>
+  <div class="stat-row"><span class="hl">SPEED</span><span class="hv" id="v-speed">0</span></div>
+  <div class="stat-row"><span class="hl">CREDITS</span><span class="hv hc4" id="v-creds">0 cr</span></div>
+  <div class="stat-row"><span class="hl">AMMO</span><span class="hv" id="v-ammo">30</span></div>
+  <div class="stat-row"><span class="hl">CARGO</span><span class="hv hc3" id="v-cargo">EMPTY</span></div>
+  <div class="stat-row"><span class="hl">SYSTEM</span><span class="hv hc5" id="v-sys">—</span></div>
+  <div class="stat-row"><span class="hl">FACTION</span><span class="hv" id="v-fac">—</span></div>
+  <div style="margin-top:6px">
+    <div class="bar-row"><span class="bar-lbl">SHIELD</span><div class="bar-bg"><div class="bar-fill" id="b-shield"></div></div></div>
+    <div class="bar-row"><span class="bar-lbl">HULL</span><div class="bar-bg"><div class="bar-fill" id="b-hull"></div></div></div>
+    <div class="bar-row"><span class="bar-lbl">FUEL</span><div class="bar-bg"><div class="bar-fill" id="b-fuel"></div></div></div>
+  </div>
+</div>
+
+<div class="hud hbox" id="hud-tr">
+  <div id="tgt-name">NO TARGET</div>
+  <div id="tgt-type" style="margin-top:1px"></div>
+  <div id="tgt-dist"></div>
+  <div id="tgt-hint"></div>
+  <div id="tgt-hp-row" style="display:none;margin-top:4px">
+    <div class="tgt-bar-row"><span style="font-size:9px;color:#555;margin-right:4px">HP</span><div class="tgt-bar-bg"><div class="tgt-bar-fill" id="tgt-hp-fill"></div></div></div>
+  </div>
+</div>
+
+<div class="hud hbox" id="hud-bc">
+  <div id="msg-line">INITIALIZING CORSAIR SYSTEMS…</div>
+  <div id="obj-line"></div>
+  <div id="hint-line">W/S: thrust · ARROWS/A/D/Q/E: steer · TAB: target · H: jump · F: land · L: fire · J: journal · M: map</div>
+</div>
+
+<div class="hud hbox" id="hud-bl">
+  <div id="dest-hdr">NAV CHART</div>
+  <input id="dest-search" type="text" placeholder="search system…" autocomplete="off">
+  <div id="dest-list"></div>
+</div>
+
+<div class="hud hbox" id="hud-br" style="padding:0">
+  <canvas id="radar" width="120" height="120"></canvas>
+</div>
+
+<div id="bounty-hud"><div id="bounty-count">WANTED ★★★</div></div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div id="overlay-tabs">
+    <div class="ovl-tab active" onclick="showTab('log')" id="tab-log">JOURNAL</div>
+    <div class="ovl-tab" onclick="showTab('map')" id="tab-map">GALAXY MAP</div>
+    <div class="ovl-tab" onclick="showTab('missions')" id="tab-missions">CONTRACTS</div>
+    <div class="ovl-tab" onclick="showTab('codex')" id="tab-codex">CODEX</div>
+    <div class="ovl-tab" onclick="showTab('factions')" id="tab-factions">FACTIONS</div>
+    <div id="overlay-close" onclick="closeOverlay()">[ CLOSE ]</div>
+  </div>
+  <div id="overlay-body">
+    <div class="ovl-page active" id="page-log"></div>
+    <div class="ovl-page" id="page-map"><canvas id="gmap"></canvas><div id="map-legend" style="font-size:9px;color:#333;margin-top:6px;letter-spacing:1px"></div></div>
+    <div class="ovl-page" id="page-missions"></div>
+    <div class="ovl-page" id="page-codex"></div>
+    <div class="ovl-page" id="page-factions"></div>
+  </div>
+</div>
+
+<!-- PLANET DIALOG — tabbed layout -->
+<div id="pdialog">
+  <div id="pdlg-art">
+    <div id="pdlg-bg"></div>
+    <div id="pdlg-npc"></div>
+    <div id="pdlg-info">
+      <div id="pdlg-pname"></div>
+      <div id="pdlg-desc"></div>
+      <div id="pdlg-stats"></div>
+      <div id="pdlg-tabbar"></div>
+      <div id="pdlg-panels"></div>
+    </div>
+  </div>
+  <div id="pdlg-bot">
+    <div id="pdlg-frep"></div>
+    <button id="pdlg-close" onclick="closePlanetDialog()">[ LEAVE ORBIT ]</button>
+  </div>
+</div>
+
+<script>
+const R=(a,b)=>a+Math.random()*(b-a);
+const RI=(a,b)=>Math.floor(R(a,b+1));
+const RF=a=>a[RI(0,a.length-1)];
+const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+// ── THREE SETUP ──
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x000005,0.0000085);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,1,2000000);
+const renderer=new THREE.WebGLRenderer({antialias:true,canvas:document.getElementById('main'),powerPreference:'high-performance'});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+scene.add(new THREE.AmbientLight(0x0a0a18,5));
+
+// ── DOM ──
+const $=id=>document.getElementById(id);
+const elThrust=$('v-thrust'),elSpeed=$('v-speed'),elCreds=$('v-creds'),
+  elAmmo=$('v-ammo'),elCargo=$('v-cargo'),elSys=$('v-sys'),elFac=$('v-fac'),
+  elMsg=$('msg-line'),elObj=$('obj-line'),
+  rctx=$('radar').getContext('2d'),elWpl=$('wpl'),
+  elDmg=$('dmgflash'),elHyp=$('hyperfx'),elCvAlert=$('cv-alert'),
+  elDestSearch=$('dest-search'),elDestList=$('dest-list');
+
+let msgTimer=0;
+function setMsg(s,color='#05ffa1'){elMsg.textContent=s;elMsg.style.color=color;msgTimer=4}
+function setObj(s){elObj.textContent=s}
+
+// ── STARS ──
+function mkStars(n,spread,size,col,op,pf){
+  const g=new THREE.BufferGeometry(),v=new Float32Array(n*3);
+  for(let i=0;i<n*3;i++)v[i]=(Math.random()-0.5)*spread;
+  g.setAttribute('position',new THREE.BufferAttribute(v,3));
+  const p=new THREE.Points(g,new THREE.PointsMaterial({color:col,size,transparent:true,opacity:op}));
+  p.userData.pf=pf;scene.add(p);return p;
+}
+const starLayers=[
+  mkStars(8000,1200000,2.2,0xaaaaff,0.45,0.018),
+  mkStars(4000,800000,3,0xffddaa,0.65,0.05),
+  mkStars(2000,500000,4,0x88ffff,0.75,0.1),
+];
+
+// ── FACTIONS ──
+const FACTIONS=[
+  {id:'NEON', name:'Neon Republic',    col:0x01cdfe,css:'#01cdfe',fog:0x000012,
+   desc:'A mercantile democracy. Pays well for trade runs. Despises pirates.',hostile_at:-30,agro_at:-60},
+  {id:'CHROME',name:'Chrome Syndicate',col:0xff71ce,css:'#ff71ce',fog:0x120005,
+   desc:'Corporate oligarchy controlling rare tech markets. Respects competence.',hostile_at:-25,agro_at:-50},
+  {id:'AURORA',name:'Aurora Collective',col:0x05ffa1,css:'#05ffa1',fog:0x001210,
+   desc:'A scientific collective exploring ancient ruins. Values knowledge above all.',hostile_at:-35,agro_at:-65},
+  {id:'VANTA', name:'Vanta Dominion',  col:0xb967ff,css:'#b967ff',fog:0x080014,
+   desc:'A militarist empire expanding aggressively. Brutal to enemies, loyal to allies.',hostile_at:-20,agro_at:-40},
+];
+const FAC_BY_ID={};
+FACTIONS.forEach(f=>FAC_BY_ID[f.id]=f);
+
+const REP={NEON:0,CHROME:0,AURORA:0,VANTA:0};
+function getRep(fid){return REP[fid]||0}
+function addRep(fid,v){REP[fid]=clamp((REP[fid]||0)+v,-100,100);updateBars()}
+function repLabel(r){if(r>=60)return'ALLIED';if(r>=20)return'FRIENDLY';if(r>0)return'NEUTRAL+';if(r===0)return'NEUTRAL';if(r>=-20)return'WARY';if(r>=-50)return'HOSTILE';return'ENEMY'}
+function repColor(r){return r>=20?'#05ffa1':r>=-20?'#fff951':'#ff4444'}
+
+// ── RANKS ──
+const RANKS=[
+  {name:'DRIFTER',xp:0},{name:'SCOUT',xp:200},{name:'CORSAIR',xp:600},
+  {name:'COMMANDER',xp:1400},{name:'ADMIRAL',xp:3000},{name:'LEGEND',xp:6000},
+];
+
+const player={
+  thrust:0,velocity:0,fuel:100,maxFuel:100,
+  shield:100,maxShield:100,hull:100,maxHull:100,
+  credits:150,ammo:30,maxAmmo:30,
+  laserCooldown:0,dead:false,respawning:false,
+  cargoType:null,cargoQty:0,cargoMaxQty:20,
+  cargoBoughtAt:null,   // system ID where cargo was purchased
+  cargoIsMission:false, // true = mission cargo, not sellable on open market
+  xp:0,rank:0,camShake:0,
+  kills:0,convoysBusted:0,deliveries:0,planetsVisited:new Set(),
+  upgrades:{shieldBoost:false,hullBoost:false,fuelBoost:false,ammoBoost:false,laserBoost:false},
+};
+
+function addXP(v){
+  player.xp+=v;
+  const next=RANKS[player.rank+1];
+  if(next&&player.xp>=next.xp){
+    player.rank++;
+    notify(`★ RANK UP: ${RANKS[player.rank].name}`,'#fff951');
+    log(`Promoted to rank: ${RANKS[player.rank].name}.`,'Progress');
+  }
+  updateRankBar();
+}
+function updateRankBar(){
+  const cur=RANKS[player.rank],next=RANKS[player.rank+1];
+  $('rank-name').textContent=RANKS[player.rank].name;
+  const pct=next?Math.round((player.xp-cur.xp)/(next.xp-cur.xp)*100):100;
+  $('rank-bar-fill').style.width=pct+'%';
+  $('rank-xp').textContent=next?`${player.xp-cur.xp}/${next.xp-cur.xp} XP`:'MAX RANK';
+}
+
+// ── GEOMETRY ──
+function sm(col,ei=0.5){return new THREE.MeshPhongMaterial({color:0x0a0a0a,emissive:col,emissiveIntensity:ei,flatShading:true})}
+function smT(col,ei=0.5,op=0.7){return new THREE.MeshPhongMaterial({color:0x0a0a0a,emissive:col,emissiveIntensity:ei,flatShading:true,transparent:true,opacity:op})}
+function bmBasic(col,wf=false,op=1){return new THREE.MeshBasicMaterial({color:col,wireframe:wf,transparent:op<1,opacity:op})}
+
+// ── SHIP MODELS ──
+function buildTrader(col){
+  const g=new THREE.Group();
+  g.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(160,44,280),sm(col,0.4))));
+  const pod=new THREE.Mesh(new THREE.CylinderGeometry(20,26,180,8),sm(col,0.3));
+  pod.rotation.x=Math.PI/2;
+  [-110,110].forEach(x=>{const p=pod.clone();p.position.x=x;g.add(p)});
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(28,80,8),sm(col,0.6));
+  nose.rotation.x=Math.PI/2;nose.position.z=-180;g.add(nose);
+  return g;
+}
+function buildCombat(col){
+  const g=new THREE.Group();
+  const fus=new THREE.Mesh(new THREE.CylinderGeometry(18,10,260,8),sm(col,0.6));
+  fus.rotation.x=Math.PI/2;g.add(fus);
+  const ws=new THREE.Shape();
+  ws.moveTo(0,0);ws.lineTo(160,70);ws.lineTo(50,0);
+  const wgeo=new THREE.ShapeGeometry(ws);
+  [-1,1].forEach(sx=>{const w=new THREE.Mesh(wgeo,sm(col,0.4));w.rotation.x=-Math.PI/2;w.scale.x=sx;w.position.set(sx<0?-10:10,-5,25);g.add(w)});
+  return g;
+}
+function buildEscort(col){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.OctahedronGeometry(55,1),sm(col,0.5)));
+  for(let i=0;i<3;i++){
+    const fin=new THREE.Mesh(new THREE.BoxGeometry(8,80,45),sm(col,0.35));
+    const a=(i/3)*Math.PI*2;fin.position.set(Math.cos(a)*58,Math.sin(a)*58,0);fin.rotation.z=a;g.add(fin);
+  }
+  return g;
+}
+function buildSmuggler(col){
+  const g=new THREE.Group();
+  const hull=new THREE.Mesh(new THREE.BoxGeometry(110,36,185),sm(col,0.45));g.add(hull);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(190,10,18),sm(col,0.3));arm.position.set(0,28,-25);g.add(arm);
+  const eng=new THREE.Mesh(new THREE.CylinderGeometry(13,20,55,8),sm(col,0.7));eng.rotation.x=Math.PI/2;eng.position.z=110;g.add(eng);
+  return g;
+}
+const SHIP_BUILDERS={TRADER:buildTrader,COMBAT:buildCombat,ESCORT:buildEscort,SMUGGLER:buildSmuggler};
+const SHIP_COLS={TRADER:0x05ffa1,COMBAT:0xff4444,ESCORT:0xb967ff,SMUGGLER:0xfff951};
+const SHIP_HP={TRADER:12,COMBAT:25,ESCORT:18,SMUGGLER:15};
+
+// ── PLANET MODELS ──
+function buildPlanetMesh(radius,color,hasRing){
+  const g=new THREE.Group();
+  const core=new THREE.Mesh(new THREE.SphereGeometry(radius,28,28),
+    new THREE.MeshPhongMaterial({color:0x080808,emissive:color,emissiveIntensity:0.2,flatShading:true}));
+  g.add(core);
+  const wire=new THREE.Mesh(new THREE.SphereGeometry(radius*1.035,12,12),bmBasic(color,true,0.15));
+  g.add(wire);
+  if(hasRing){
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(radius*1.75,radius*0.09,4,52),bmBasic(color,true,0.6));
+    ring.rotation.x=Math.PI/2.4;g.add(ring);
+  }
+  return g;
+}
+function buildStar(col){
+  const g=new THREE.Group();
+  const r=R(900,1500);
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(r,24,24),
+    new THREE.MeshPhongMaterial({color:0x050505,emissive:col,emissiveIntensity:1,flatShading:true})));
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(r*1.6,10,10),bmBasic(col,true,0.12)));
+  const pl=new THREE.PointLight(col,1.2,55000);g.add(pl);
+  return{group:g,radius:r};
+}
+function buildBelt(col,innerR,outerR){
+  const g=new THREE.Group();
+  for(let i=0;i<70;i++){
+    const r=R(28,70),d=R(innerR,outerR),a=Math.random()*Math.PI*2;
+    const m=new THREE.Mesh(new THREE.IcosahedronGeometry(r,0),smT(col,0.4,0.35));
+    m.position.set(Math.cos(a)*d,R(-150,150),Math.sin(a)*d);g.add(m);
+  }
+  return g;
+}
+
+// ── PLANET TYPES ──
+const PLANET_TYPES={
+  CAPITAL:{label:'Capital World',ring:true,services:['refuel','repair','ammo','market','upgrade'],
+    desc:'The power center of the faction. Full services, best contracts, political intrigue.',color:'#fff951'},
+  TRADE:{label:'Trade Hub',ring:false,services:['refuel','repair','market'],
+    desc:'A bustling marketplace with docks and trade berths. Buy low, sell high.',color:'#01cdfe'},
+  OUTPOST:{label:'Deep Space Outpost',ring:false,services:['refuel','ammo'],
+    desc:'A minimal waystation in deep space. Fuel and ammo only — no luxuries.',color:'#b967ff'},
+  RELIC:{label:'Ancient Ruins',ring:false,services:['relic','scan'],
+    desc:'Ruins from an extinct civilization. Artifacts fetch high prices from collectors.',color:'#ff71ce'},
+  SCAN:{label:'Wilderness World',ring:false,services:['scan'],
+    desc:'An untouched alien biosphere. Science teams pay for survey data.',color:'#05ffa1'},
+  GATE:{label:'Gate World',ring:true,services:['gate'],
+    desc:'A hyperspace nexus. Dangerous distortions, but instant travel to unknown regions.',color:'#fff951'},
+};
+const PT_KEYS=Object.keys(PLANET_TYPES);
+const TRADE_GOODS=[
+  {name:'Neon Alloy',    base:70, category:'material'},
+  {name:'Quantum Spice', base:95, category:'luxury'},
+  {name:'Bio Fuel Cells',base:80, category:'energy'},
+  {name:'Ancient Relic', base:180,category:'relic'},
+  {name:'Data Archives', base:110,category:'tech'},
+  {name:'Void Crystals', base:150,category:'rare'},
+  {name:'Plasma Cores',  base:130,category:'energy'},
+];
+
+// ── GALAXY GENERATION ──
+const GR=280000;
+const systems=[];
+let curSys=null;
+let selectedDest=null;
+
+function genGalaxy(){
+  const COUNT=32,MIN_DIST=48000;
+  const placed=[];
+  for(let i=0;i<COUNT;i++){
+    let pos,tries=0;
+    do{
+      const r=Math.sqrt(Math.random())*GR*0.92,a=Math.random()*Math.PI*2;
+      pos=V3(Math.cos(a)*r,R(-GR*0.02,GR*0.02),Math.sin(a)*r);tries++;
+    }while(placed.some(p=>p.distanceTo(pos)<MIN_DIST)&&tries<300);
+    placed.push(pos.clone());
+    const faction=FACTIONS[i%4];
+    const sd=buildStar(faction.col);
+    sd.group.position.copy(pos);scene.add(sd.group);
+    const sys={
+      id:i,name:`SYS-${1000+i}`,position:pos.clone(),faction,
+      starRadius:sd.radius,planets:[],belts:[],capital:false,hostility:0,
+    };
+    const nPlanets=RI(3,6);
+    let lastR=0;const incl=R(-0.15,0.15);
+    for(let p=0;p<nPlanets;p++){
+      let type=p===0?'CAPITAL':RF(['TRADE','TRADE','OUTPOST','RELIC','SCAN','GATE']);
+      const pdata=PLANET_TYPES[type];
+      const pR=R(320,900);
+      const color=faction.col;
+      lastR+=R(2200,4500)+pR*3;
+      const a0=Math.random()*Math.PI*2;
+      const mesh=buildPlanetMesh(pR,color,pdata.ring);
+      mesh.position.set(
+        pos.x+Math.cos(a0)*lastR,
+        pos.y+Math.sin(incl)*lastR*0.06,
+        pos.z+Math.sin(a0)*lastR
+      );
+      scene.add(mesh);
+      let market=null;
+      if(pdata.services.includes('market')){
+        market=TRADE_GOODS.slice().sort(()=>Math.random()-0.5).slice(0,3).map(g=>{
+          // Buy price: what YOU pay. Sell price: what THEY pay YOU. Always a significant gap.
+          const buy=Math.round(g.base*(0.9+Math.random()*0.25));
+          const sell=Math.round(buy*0.35); // flat 35% — always a loss same-planet
+          return{...g,buy,sell,sysId:sys.id};
+        });
+      }
+      sys.planets.push({
+        sys,mesh,radius:pR,color,type,name:`${sys.name}-P${p+1}`,
+        orbitR:lastR,orbitA:a0,orbitSpeed:R(0.00001,0.00005),
+        incl,scanned:false,relicTaken:false,
+        market,missions:[],firstVisit:true,
+      });
+    }
+    if(Math.random()<0.55){
+      const inner=lastR+2000,outer=inner+3000;
+      const bm=buildBelt(faction.col,inner,outer);
+      bm.position.copy(pos);scene.add(bm);
+      sys.belts.push({mesh:bm,speed:R(0.000004,0.000014)});
+    }
+    systems.push(sys);
+  }
+  const doneCap={};
+  systems.forEach(s=>{if(!doneCap[s.faction.id]){doneCap[s.faction.id]=s;s.capital=true;}else s.capital=false;});
+}
+genGalaxy();
+curSys=systems[0];selectedDest=systems[1]||systems[0];
+scene.fog.color.setHex(curSys.faction.fog);
+camera.position.copy(curSys.position.clone().add(V3(0,1500,24000)));
+
+// ── ECONOMY HELPERS ──
+// Get sell price adjusted for destination demand (better prices at faction that wants the good)
+function getSellValue(good,sys){
+  const base=good.base||100;
+  const factionMult={NEON:1.0,CHROME:1.2,AURORA:1.1,VANTA:0.85}[sys.faction.id]||1.0;
+  return Math.round(base*factionMult*(0.5+Math.random()*0.15));
+}
+
+// ── CONVOY FORMATION ──
+// Offsets relative to travel direction: z=forward, x=right, y=up
+const CONVOY_FORMATION=[
+  {x:0,    y:0,   z:0   },  // leader
+  {x:-950, y:80,  z:650 },  // left wing
+  {x:950,  y:-80, z:650 },  // right wing
+  {x:0,    y:180, z:1350},  // rear
+];
+
+const convoys=[];
+const creditOrbs=[];
+let convoyTimer=10;
+
+function spawnConvoy(missionForced){
+  if(systems.length<2)return null;
+  const fromSys=missionForced?missionForced.from:RF(systems);
+  const toSys=missionForced?missionForced.to:RF(systems.filter(s=>s!==fromSys));
+  if(!toSys)return null;
+  const nShips=RI(2,4);
+  const fac=fromSys.faction;
+  const cv={from:fromSys,to:toSys,ships:[],progress:0,done:false,faction:fac,
+    value:RI(60,180)*nShips,missionForced:!!missionForced};
+
+  // Compute initial travel direction for aligned formation spawn
+  const travelDir=toSys.position.clone().sub(fromSys.position).normalize();
+  const right=new THREE.Vector3().crossVectors(travelDir,new THREE.Vector3(0,1,0)).normalize();
+  if(right.lengthSq()<0.01)right.set(1,0,0); // degenerate fallback
+
+  for(let i=0;i<nShips;i++){
+    const type=i===0?'TRADER':(Math.random()<0.4?'COMBAT':'ESCORT');
+    const mesh=SHIP_BUILDERS[type](SHIP_COLS[type]);
+    mesh.scale.setScalar(0.85);
+    const fo=CONVOY_FORMATION[i]||{x:R(-400,400),y:R(-150,150),z:i*800};
+    // Spawn in proper formation from the start
+    const spawnPos=fromSys.position.clone()
+      .add(travelDir.clone().multiplyScalar(fo.z+R(-80,80)))
+      .add(right.clone().multiplyScalar(fo.x+R(-60,60)))
+      .add(new THREE.Vector3(0,fo.y+R(-40,40),0));
+    mesh.position.copy(spawnPos);
+    mesh.lookAt(spawnPos.clone().add(travelDir.clone().multiplyScalar(2000)));
+    scene.add(mesh);
+    cv.ships.push({mesh,type,hp:SHIP_HP[type],maxHp:SHIP_HP[type],alive:true,laserT:R(3,9),formIdx:i,aggro:false});
+  }
+  convoys.push(cv);
+  const nearest=cv.ships[0]?.mesh.position;
+  if(nearest&&camera.position.distanceTo(nearest)<120000){
+    showAlert(`⚠ CONVOY: ${fac.name} · ${nShips} ships · ${fromSys.name} → ${toSys.name}`);
+  }
+  return cv;
+}
+
+function showAlert(txt){
+  elCvAlert.textContent=txt;elCvAlert.style.display='block';
+  clearTimeout(elCvAlert._t);elCvAlert._t=setTimeout(()=>elCvAlert.style.display='none',4000);
+}
+
+const bountyHunters=[];
+let bountyCheckTimer=0;
+
+function spawnBountyHunter(fac){
+  const mesh=SHIP_BUILDERS.COMBAT(0xff2244);
+  mesh.scale.setScalar(1.1);
+  mesh.position.copy(camera.position).add(V3(R(-8000,8000),R(-2000,2000),R(-8000,8000)));
+  scene.add(mesh);
+  const bs={mesh,faction:fac,hp:30,maxHp:30,alive:true,laserT:R(0.5,2),aggro:true};
+  bountyHunters.push(bs);
+  showAlert(`⚠ ${fac.name.toUpperCase()} BOUNTY HUNTER ENGAGED`);
+  notify(`${fac.name} has sent a bounty hunter after you.`,'#ff4444');
+  log(`Bounty hunter dispatched by ${fac.name}.`,'Combat');
+}
+
+// ── LASERS ──
+const lasers=[];
+function spawnLaser(from,to,col,life=0.2){
+  const g=new THREE.BufferGeometry();
+  const pts=new Float32Array([from.x,from.y,from.z,to.x,to.y,to.z]);
+  g.setAttribute('position',new THREE.BufferAttribute(pts,3));
+  const mesh=new THREE.Line(g,new THREE.LineBasicMaterial({color:col,transparent:true,opacity:1}));
+  scene.add(mesh);lasers.push({mesh,life,maxLife:life});
+}
+function fireAtPlayer(from){
+  const jitter=V3(R(-400,400),R(-180,180),R(-400,400));
+  spawnLaser(from,camera.position.clone().add(jitter),0xff2222,0.18);
+  const dist=camera.position.distanceTo(from);
+  const hitChance=clamp(0.5-dist/38000,0.04,0.55);
+  if(Math.random()<hitChance)damagePlayer(R(4,9));
+}
+
+// ── PLAYER: HEALTH, DAMAGE ──
+function updateBars(){
+  $('b-shield').style.width=(player.shield/player.maxShield*100)+'%';
+  $('b-hull').style.width=(player.hull/player.maxHull*100)+'%';
+  $('b-hull').style.background=player.hull>40?'#05ffa1':player.hull>20?'#fff951':'#ff4444';
+  $('b-fuel').style.width=(player.fuel/player.maxFuel*100)+'%';
+}
+function damagePlayer(dmg){
+  if(player.dead)return;
+  let d=dmg;
+  if(player.shield>0){const sd=Math.min(player.shield,d);player.shield-=sd;d-=sd;}
+  if(d>0)player.hull=Math.max(0,player.hull-d);
+  elDmg.style.opacity='1';setTimeout(()=>elDmg.style.opacity='0',140);
+  player.camShake=320+dmg*20;
+  updateBars();
+  if(player.hull<=0)playerDied();
+}
+function healPlayer(sh,hl){
+  player.shield=Math.min(player.maxShield,player.shield+(sh||0));
+  player.hull=Math.min(player.maxHull,player.hull+(hl||0));
+  updateBars();
+}
+function playerDied(){
+  if(player.respawning)return;
+  player.dead=true;player.respawning=true;
+  setMsg('💀 SHIP DESTROYED — EMERGENCY RESPAWN…','#ff4444');
+  log('Ship destroyed. Emergency respawn initiated.','Combat');
+  player.credits=Math.max(0,player.credits-Math.round(player.credits*0.25));
+  player.cargoType=null;player.cargoQty=0;player.cargoBoughtAt=null;player.cargoIsMission=false;
+  setTimeout(()=>{
+    player.dead=false;player.respawning=false;
+    player.shield=40;player.hull=50;player.fuel=60;
+    const cap=systems.find(s=>s.capital&&s.faction.id===curSys.faction.id)||systems[0];
+    curSys=cap;selectedDest=cap;
+    camera.position.copy(cap.position.clone().add(V3(0,1500,22000)));
+    scene.fog.color.setHex(cap.faction.fog);
+    updateBars();rebuildTargets();refreshDest();
+    setMsg(`RESPAWNED AT ${cap.name} — CREDITS REDUCED 25%`,'#fff951');
+    log(`Respawned at ${cap.name}.`,'Combat');
+  },2800);
+}
+let shieldRegenT=0;
+
+// ── TARGETING ──
+let targetList=[],targetIdx=-1,curTarget=null;
+function rebuildTargets(){
+  targetList=[];
+  targetList.push({kind:'STAR',sys:curSys,pos:()=>curSys.position.clone()});
+  curSys.planets.forEach(p=>targetList.push({kind:'PLANET',planet:p,pos:()=>p.mesh.position.clone()}));
+  convoys.forEach(cv=>cv.ships.forEach(s=>{
+    if(s.alive)targetList.push({kind:'SHIP',ship:s,convoy:cv,pos:()=>s.mesh.position.clone()});
+  }));
+  bountyHunters.forEach(bs=>{
+    if(bs.alive)targetList.push({kind:'BOUNTY',ship:bs,pos:()=>bs.mesh.position.clone()});
+  });
+}
+function cycleTarget(dir=1){
+  if(!targetList.length)return;
+  targetIdx=targetIdx<0?0:(targetIdx+dir+targetList.length)%targetList.length;
+  curTarget=targetList[targetIdx];
+}
+function clearTarget(){curTarget=null;targetIdx=-1;}
+
+// Detect ANY planet the player is pointing at, regardless of which system they're in
+// Checks current system first, then any nearby system within 100ku
+function getPointedPlanet(){
+  const fwd=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).normalize();
+  let best=null,bestScore=Infinity;
+  // Check current system and any system whose planets might be physically nearby
+  const checkSystems=new Set([curSys]);
+  systems.forEach(s=>{
+    if(camera.position.distanceTo(s.position)<100000)checkSystems.add(s);
+  });
+  checkSystems.forEach(sys=>{
+    sys.planets.forEach(p=>{
+      const dir=p.mesh.position.clone().sub(camera.position);
+      const dist=dir.length();
+      if(dist>150000)return;
+      const angle=fwd.angleTo(dir.normalize());
+      if(angle>0.22)return;
+      const score=angle*1200+dist*0.0001;
+      if(score<bestScore){bestScore=score;best=p;}
+    });
+  });
+  return best;
+}
+
+function updateTargetHUD(){
+  const pointed=getPointedPlanet();
+  const t=pointed?{kind:'PLANET',planet:pointed,pos:()=>pointed.mesh.position.clone()}:curTarget;
+  if(!t){
+    $('tgt-name').textContent='NO TARGET';
+    $('tgt-type').textContent='';$('tgt-dist').textContent='';
+    $('tgt-hint').textContent='TAB: cycle targets · H: hyperspace';
+    $('tgt-hp-row').style.display='none';return;
+  }
+  const pos=t.pos();
+  const dist=Math.round(camera.position.distanceTo(pos));
+  if(t.kind==='STAR'){$('tgt-name').textContent=t.sys.name;$('tgt-type').textContent='STAR SYSTEM';}
+  else if(t.kind==='PLANET'){$('tgt-name').textContent=t.planet.name;$('tgt-type').textContent=PLANET_TYPES[t.planet.type].label;}
+  else if(t.kind==='SHIP'){$('tgt-name').textContent='CONVOY '+t.ship.type;$('tgt-type').textContent=t.convoy.faction.name;}
+  else if(t.kind==='BOUNTY'){$('tgt-name').textContent='BOUNTY HUNTER';$('tgt-type').textContent=t.ship.faction.name;}
+  $('tgt-dist').textContent=dist+'u away';
+  $('tgt-hp-row').style.display=(t.kind==='SHIP'||t.kind==='BOUNTY')?'block':'none';
+  if(t.kind==='SHIP'||t.kind==='BOUNTY'){
+    const s=t.ship;
+    $('tgt-hp-fill').style.width=(s.hp/s.maxHp*100)+'%';
+    $('tgt-hint').textContent=dist<22000?'L: FIRE LASER':'APPROACH TO FIRE (< 22000u)';
+  } else if(t.kind==='PLANET'){
+    const landDist=t.planet.radius*2.6;
+    $('tgt-hint').textContent=dist<landDist?'F: LAND ON PLANET':`APPROACH TO LAND — ${Math.round(dist-landDist)}u more`;
+  } else $('tgt-hint').textContent='';
+}
+
+// ── COMBAT ──
+function doFireLaser(){
+  if(player.laserCooldown>0){setMsg('LASER RECHARGING','#666');return}
+  if(player.ammo<=0){setMsg('NO AMMO — land at Outpost or Capital to restock','#ff4444');return}
+  let best=null,bestD=Infinity;
+  const RANGE=22000;
+  convoys.forEach(cv=>cv.ships.forEach(s=>{
+    if(!s.alive)return;
+    const d=camera.position.distanceTo(s.mesh.position);
+    if(d<RANGE&&d<bestD){bestD=d;best={kind:'convoy',s,cv};}
+  }));
+  bountyHunters.forEach(bs=>{
+    if(!bs.alive)return;
+    const d=camera.position.distanceTo(bs.mesh.position);
+    if(d<RANGE&&d<bestD){bestD=d;best={kind:'bounty',bs};}
+  });
+  if(!best){setMsg('NO TARGET IN LASER RANGE (< 22000u)','#666');return}
+  player.ammo--;
+  player.laserCooldown=player.upgrades.laserBoost?8:16;
+  shieldRegenT=0;
+  let targetPos,hpObj,fid,cv;
+  if(best.kind==='convoy'){
+    targetPos=best.s.mesh.position.clone();hpObj=best.s;cv=best.cv;fid=cv.faction.id;
+    if(getRep(fid)>-40)addRep(fid,-6);
+    // Make hit ship and nearby escorts aggressive
+    best.s.aggro=true;
+    cv.ships.forEach(s=>{if(s.alive&&(s.type==='COMBAT'||s.type==='ESCORT'))s.aggro=true;});
+  } else {
+    targetPos=best.bs.mesh.position.clone();hpObj=best.bs;fid=best.bs.faction.id;
+  }
+  spawnLaser(camera.position.clone(),targetPos,0x05ffa1,0.25);
+  spawnLaser(camera.position.clone(),targetPos.clone().add(V3(40,10,0)),0x05ffa1,0.12);
+  const dmg=player.upgrades.laserBoost?10:7;
+  hpObj.hp-=dmg;
+  setMsg(`LASER HIT · ${hpObj.type||'BOUNTY'} · −${dmg}hp · ${Math.max(0,hpObj.hp)}/${hpObj.maxHp} remaining`);
+  if(hpObj.hp<=0){
+    hpObj.alive=false;scene.remove(hpObj.mesh);
+    const val=best.kind==='convoy'?Math.round(cv.value/cv.ships.length):RI(50,120);
+    spawnOrb(targetPos,val);
+    player.kills++;addXP(15);
+    if(best.kind==='bounty'){
+      bountyHunters.splice(bountyHunters.indexOf(best.bs),1);
+      addRep(fid,4);
+      log(`Bounty hunter destroyed. +${val}cr orb dropped.`,'Combat');
+    } else {
+      const allDead=cv.ships.every(s=>!s.alive);
+      if(allDead){cv.done=true;player.convoysBusted++;addXP(30);addRep(fid,-10);}
+      log(`${best.s.type} convoy ship destroyed. +${val}cr orb.`,'Combat');
+    }
+    checkMissionKill(hpObj,best);
+    rebuildTargets();
+  }
+}
+
+// ── CREDIT ORBS ──
+function spawnOrb(pos,value){
+  const outer=new THREE.Mesh(new THREE.SphereGeometry(70,8,8),bmBasic(0xfff951,true,0.85));
+  const inner=new THREE.Mesh(new THREE.SphereGeometry(38,8,8),bmBasic(0xffffff,false,0.9));
+  const g=new THREE.Group();g.add(outer);g.add(inner);
+  g.position.copy(pos);scene.add(g);
+  creditOrbs.push({mesh:g,value,pos:pos.clone(),t:20});
+}
+function updateOrbs(dt){
+  for(let i=creditOrbs.length-1;i>=0;i--){
+    const o=creditOrbs[i];o.t-=dt;
+    o.mesh.rotation.y+=dt*1.1;
+    o.mesh.position.y=o.pos.y+Math.sin(Date.now()*0.002+i)*45;
+    if(camera.position.distanceTo(o.mesh.position)<1200){
+      player.credits+=o.value;
+      pop('+'+o.value+' cr','#fff951');
+      setMsg(`COLLECTED ${o.value} cr`,'#fff951');
+      scene.remove(o.mesh);creditOrbs.splice(i,1);continue;
+    }
+    if(o.t<=0){scene.remove(o.mesh);creditOrbs.splice(i,1);}
+  }
+}
+
+// ── HYPERSPACE ──
+let hyperCooldown=0;
+function doHyperspace(){
+  if(!selectedDest||selectedDest===curSys){setMsg('SELECT A DIFFERENT SYSTEM IN NAV CHART','#666');return}
+  if(hyperCooldown>0){setMsg('HYPERSPACE DRIVE COOLING DOWN','#666');return}
+  if(player.fuel<8){setMsg('INSUFFICIENT FUEL FOR HYPERSPACE','#ff4444');return}
+  elHyp.style.opacity='1';setTimeout(()=>elHyp.style.opacity='0',500);
+  player.fuel=Math.max(0,player.fuel-8);
+  hyperCooldown=120;
+  curSys=selectedDest;
+  const fwd=new THREE.Vector3(0,0,1).applyQuaternion(camera.quaternion);
+  camera.position.copy(curSys.position.clone().add(fwd.multiplyScalar(26000)));
+  scene.fog.color.setHex(curSys.faction.fog);
+  setMsg(`ARRIVED AT ${curSys.name} — ${curSys.faction.name}`,'#01cdfe');
+  log(`Hyperspace jump to ${curSys.name} (${curSys.faction.name}).`,'Travel');
+  updateBars();rebuildTargets();refreshDest();
+  checkMissionTravel();
+}
+
+// ── SYSTEM PROXIMITY DETECTION ──
+// Ensures curSys is always the nearest system, so planets/hitboxes work
+// regardless of how you travel (hyperspace OR free flight)
+function updateCurrentSystem(){
+  if(player.dead||player.respawning)return;
+  let nearest=curSys,nearestD=camera.position.distanceTo(curSys.position);
+  systems.forEach(s=>{
+    const d=camera.position.distanceTo(s.position);
+    if(d<nearestD){nearestD=d;nearest=s;}
+  });
+  if(nearest!==curSys){
+    curSys=nearest;
+    scene.fog.color.setHex(curSys.faction.fog);
+    rebuildTargets();
+    refreshDest();
+    setMsg(`ENTERING ${curSys.name} — ${curSys.faction.name}`,'#01cdfe');
+    log(`Entered ${curSys.name} (${curSys.faction.name}).`,'Travel');
+    // Flash system name on screen
+    const el=$('sys-enter');
+    el.textContent=curSys.name+' · '+curSys.faction.name;
+    el.style.opacity='1';
+    setTimeout(()=>el.style.opacity='0',2200);
+  }
+}
+
+// ── PLANET DIALOG ──
+let inDialog=false;
+let activePlanet=null;
+let activePdlgTab='services';
+
+const NPC_FACES={
+  NEON:`  ┌──────────┐\n  │  ◉    ◉  │\n  │    ──    │\n  │  \\____/ │\n  └──────────┘\n  [MERCHANT]`,
+  CHROME:`  ╔══════════╗\n  ║  ▣    ▣  ║\n  ║    ──    ║\n  ║   ╔══╗   ║\n  ╚═══╝  ╚══╝\n  [OPERATOR]`,
+  AURORA:`  ·──────────·\n  :  ○    ○  :\n  :    ~~    :\n  :  ╰────╯  :\n  ·──────────·\n  [SCIENTIST]`,
+  VANTA:`  ▓██████████▓\n  █  ▪    ▪  █\n  █    ▪▪    █\n  █  ▄████▄  █\n  ▓██████████▓\n  [COMMANDER]`,
+};
+const ART={
+  CAPITAL:`████████████████████████████████████████████████████████████\n█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█\n█▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓█\n█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█\n ═══════════════════════════════════════════════════════════\n [SPACEPORT OMEGA] [MARKET EXCHANGE] [COMMAND CENTER]`.repeat(5),
+  TRADE:`  ╔══════╗  ╔══════╗         ╔═══════════════════╗\n  ║ DOCK ║  ║ DOCK ║  ====   ║  TRADING STATION  ║\n  ╚══╤═══╝  ╚══╤═══╝  ====   ╚═══════════════════╝\n     │           │\n  ═══╧═══════════╧══════════════════════════════`.repeat(7),
+  OUTPOST:`       ·:·:·  ORBITAL WAYSTATION  ·:·:·\n  ┌──────────────────────────────────────────┐\n  │   ○──────────────────────────────○       │\n  │   │    ╔══════════════════╗      │       │\n  │   │    ║  STATION CORE    ║      │       │\n  │   ○────╣  REFUEL: READY   ╠──────○       │\n  │        ║  AMMO: STOCKED   ║              │\n  │        ╚══════════════════╝              │\n  └──────────────────────────────────────────┘`.repeat(5),
+  RELIC:`  ┌─────────────────────────────────────────────┐\n  │     △   △△△   △        △△   △      △△△△   │\n  │    △△△  █████ △△      █████ △△△   ████████ │\n  │   ──────────────────────────────────────── │\n  │   INSCRIPTION: ΔΩΣ∞ΘΛ                      │\n  │   ╔══════════════════════════════════════╗  │\n  │   ║  SCANNING... ANOMALOUS READINGS...   ║  │\n  │   ╚══════════════════════════════════════╝  │\n  └─────────────────────────────────────────────┘`.repeat(5),
+  SCAN:`  ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈\n  ≈     OCEAN SURFACE — DEPTH: UNMAPPED    ≈\n  ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈\n  /\\  /\\  /\\  /\\  /\\  /\\  /\\  /\\  /\\\n  COASTAL FOREST — BIOLUMINESCENT ZONE`.repeat(8),
+  GATE:`    ╔══════════════════════════════════════╗\n    ║  ·  ·  ·   GATE NEXUS   ·  ·  ·     ║\n    ╠══════════════════════════════════════╣\n    ║   ○  QUANTUM ENTANGLEMENT FIELD   ○  ║\n    ║   ○  STATUS: ACTIVE ∞∞∞∞∞∞∞∞∞    ○  ║\n    ║   ○  DESTINATION: UNKNOWN         ○  ║\n    ╚══════════════════════════════════════╝`.repeat(6),
+};
+
+function openPlanetDialog(planet,keepTab){
+  if(inDialog&&planet!==activePlanet)closePlanetDialog();
+  inDialog=true;activePlanet=planet;
+  const fac=planet.sys.faction;
+  const ptype=PLANET_TYPES[planet.type];
+  const rep=getRep(fac.id);
+
+  $('pdlg-bg').textContent=ART[planet.type]||ART.OUTPOST;
+  $('pdlg-bg').style.color=fac.css;
+  $('pdlg-npc').textContent=NPC_FACES[fac.id]||NPC_FACES.NEON;
+  $('pdlg-npc').style.color=fac.css;
+  $('pdlg-pname').textContent=planet.name+' · '+ptype.label;
+  $('pdlg-pname').style.color=fac.css;
+  $('pdlg-desc').textContent=ptype.desc;
+  $('pdlg-frep').innerHTML=`${fac.name} REP: <span style="color:${repColor(rep)}">${rep} (${repLabel(rep)})</span>`;
+
+  if(planet.firstVisit&&!player.planetsVisited.has(planet.name)){
+    player.planetsVisited.add(planet.name);planet.firstVisit=false;
+    addXP(10);log(`First landing on ${planet.name}. +10 XP.`,'Progress');
+  }
+
+  refreshPlanetStats();
+
+  // Build tabs
+  const services=ptype.services;
+  const hasMkt=services.includes('market');
+  const hasUpg=services.includes('upgrade');
+  const tabs=[
+    {id:'services',label:'SERVICES'},
+    hasMkt&&{id:'market',label:'MARKET'},
+    {id:'contracts',label:'CONTRACTS'},
+    hasUpg&&{id:'upgrades',label:'UPGRADES'},
+  ].filter(Boolean);
+
+  const tabbar=$('pdlg-tabbar');tabbar.innerHTML='';
+  const panels=$('pdlg-panels');panels.innerHTML='';
+
+  const panelEls={};
+  tabs.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='pdlg-tab'+(t.id===activePdlgTab?' active':'');
+    btn.textContent=t.label;
+    btn.onclick=()=>switchPdlgTab(t.id);
+    tabbar.appendChild(btn);
+    const el=document.createElement('div');
+    el.className='pdlg-panel'+(t.id===activePdlgTab?' active':'');
+    el.id='pdlgt-'+t.id;panels.appendChild(el);
+    panelEls[t.id]=el;
+  });
+
+  // Validate active tab exists
+  if(!panelEls[activePdlgTab]){
+    activePdlgTab=tabs[0].id;
+    tabs.forEach(t=>{
+      const btn=tabbar.querySelector('.pdlg-tab');
+      if(btn)btn.className='pdlg-tab'+(t.id===activePdlgTab?' active':'');
+    });
+    if(panelEls[activePdlgTab])panelEls[activePdlgTab].className='pdlg-panel active';
+  }
+
+  window.switchPdlgTab=function(id){
+    activePdlgTab=id;
+    tabbar.querySelectorAll('.pdlg-tab').forEach((b,i)=>{
+      b.className='pdlg-tab'+(tabs[i].id===id?' active':'');
+    });
+    Object.entries(panelEls).forEach(([k,el])=>el.className='pdlg-panel'+(k===id?' active':''));
+  };
+
+  const addBtn=(parent,html,fn,cls='')=>{
+    const btn=document.createElement('button');
+    btn.className='pdlg-opt '+cls;btn.innerHTML=html;
+    if(fn)btn.onclick=fn;else btn.classList.add('disabled');
+    parent.appendChild(btn);return btn;
+  };
+  const addLbl=(parent,txt)=>{
+    const d=document.createElement('div');d.className='pdlg-lbl';d.textContent=txt;parent.appendChild(d);
+  };
+
+  // ── SERVICES TAB ──
+  const svcEl=panelEls['services'];
+  if(svcEl){
+    addLbl(svcEl,'Station Services');
+    if(services.includes('refuel')){
+      const cost=Math.round(35*(1+planet.sys.hostility*0.1));
+      const disabled=player.credits<cost;
+      addBtn(svcEl,`🛢 REFUEL +40% — ${cost} cr${disabled?' <span style="color:#ff4444;font-size:9px">NEED '+(cost-player.credits)+' MORE</span>':''}`,
+        disabled?null:()=>{
+          player.credits-=cost;player.fuel=Math.min(player.maxFuel,player.fuel+40);
+          updateBars();pop('+40% FUEL','#fff951');log(`Refueled at ${planet.name}. −${cost}cr.`,'Travel');
+          openPlanetDialog(planet,true);
+        });
+    }
+    if(services.includes('repair')){
+      const cost=80;const disabled=player.credits<cost;
+      addBtn(svcEl,`🔧 FULL REPAIR — ${cost} cr${disabled?' <span style="color:#ff4444;font-size:9px">NEED '+(cost-player.credits)+' MORE</span>':''}`,
+        disabled?null:()=>{
+          player.credits-=cost;healPlayer(100,100);
+          pop('REPAIRED','#05ffa1');log(`Repaired at ${planet.name}. −${cost}cr.`,'Travel');
+          openPlanetDialog(planet,true);
+        });
+    }
+    if(services.includes('ammo')){
+      const cost=60;const already=player.ammo>=player.maxAmmo;
+      addBtn(svcEl,`🔴 RESTOCK AMMO (full) — ${cost} cr`,
+        (already||player.credits<cost)?null:()=>{
+          player.credits-=cost;player.ammo=player.maxAmmo;
+          pop('AMMO FULL','#ff71ce');log(`Restocked ammo. −${cost}cr.`,'Travel');
+          openPlanetDialog(planet,true);
+        },already?'disabled':'');
+    }
+    if(services.includes('relic')){
+      addLbl(svcEl,'Exploration');
+      if(!planet.relicTaken){
+        addBtn(svcEl,'🏺 RECOVER RELIC — +320 cr',()=>{
+          planet.relicTaken=true;player.credits+=320;addRep(fac.id,6);addXP(20);
+          pop('+320 cr RELIC','#ff71ce');log(`Recovered relic from ${planet.name}.`,'Exploration');
+          openPlanetDialog(planet,true);
+        });
+      } else addBtn(svcEl,'🏺 RELIC ALREADY RECOVERED',null,'disabled');
+    }
+    if(services.includes('scan')){
+      if(!planet.scanned){
+        addLbl(svcEl,'Survey');
+        addBtn(svcEl,'🔬 SUBMIT SURVEY DATA — +150 cr',()=>{
+          planet.scanned=true;player.credits+=150;addRep(fac.id,7);addXP(15);
+          pop('+150 cr SURVEY','#05ffa1');log(`Survey submitted at ${planet.name}.`,'Exploration');
+          checkMissionScan(planet);openPlanetDialog(planet,true);
+        });
+      } else addBtn(svcEl,'🔬 SURVEY ALREADY SUBMITTED',null,'disabled');
+    }
+    if(services.includes('gate')){
+      addLbl(svcEl,'Hypergate');
+      addBtn(svcEl,'🌀 ACTIVATE GATE — random quantum jump',()=>{
+        const dest=RF(systems.filter(s=>s!==curSys));
+        curSys=dest;selectedDest=dest;
+        camera.position.copy(dest.position.clone().add(V3(R(-60000,60000),R(-15000,15000),R(-60000,60000))));
+        scene.fog.color.setHex(dest.faction.fog);
+        setMsg(`GATE JUMP → ${dest.name}`,'#fff951');
+        log(`Gate activated. Emerged in ${dest.name}.`,'Travel');
+        rebuildTargets();refreshDest();closePlanetDialog();
+      });
+    }
+    if(svcEl.children.length===0)svcEl.innerHTML='<div class="pdlg-lbl">No services available.</div>';
+  }
+
+  // ── MARKET TAB ──
+  const mktEl=panelEls['market'];
+  if(mktEl&&planet.market){
+    addLbl(mktEl,'Buy Goods');
+    planet.market.forEach(item=>{
+      const canBuy=player.credits>=item.buy&&(player.cargoQty===0||player.cargoType===item.name)&&player.cargoQty<player.cargoMaxQty;
+      addBtn(mktEl,
+        `🛒 BUY 5× ${item.name} — ${item.buy*5} cr<br><span style="color:#555;font-size:9px">base: ${item.base} · buy: ${item.buy}/u · sell elsewhere: ~${Math.round(item.base*0.55)}/u est.</span>`,
+        canBuy?()=>{
+          if(player.cargoQty>0&&player.cargoType!==item.name){notify('Sell current cargo first','#ff4444');return}
+          player.credits-=item.buy*5;
+          player.cargoType=item.name;player.cargoQty=Math.min(player.cargoMaxQty,player.cargoQty+5);
+          player.cargoBoughtAt=planet.sys.id;player.cargoIsMission=false;
+          pop('LOADED '+item.name,'#01cdfe');log(`Bought ${item.name} at ${planet.name}.`,'Trade');
+          openPlanetDialog(planet,true);
+        }:null,canBuy?'':'disabled');
+    });
+
+    addLbl(mktEl,'Sell Cargo');
+    if(player.cargoQty>0){
+      if(player.cargoIsMission){
+        addBtn(mktEl,`⚠ ${player.cargoQty}× ${player.cargoType} [MISSION CARGO — NOT SELLABLE]<br><span style="color:#555;font-size:9px">Complete the delivery contract to receive payment.</span>`,null,'warn disabled');
+      } else if(player.cargoBoughtAt===planet.sys.id){
+        addBtn(mktEl,`⚠ ${player.cargoQty}× ${player.cargoType} — CANNOT SELL HERE<br><span style="color:#555;font-size:9px">Trade goods between systems for profit. Travel elsewhere to sell.</span>`,null,'warn disabled');
+      } else {
+        const marketItem=planet.market?.find(m=>m.name===player.cargoType);
+        const sellVal=marketItem?Math.round(marketItem.sell*player.cargoQty):Math.round(getSellValue({base:80},planet.sys)*player.cargoQty*0.6);
+        addBtn(mktEl,`💰 SELL ${player.cargoQty}× ${player.cargoType} — +${sellVal} cr<br><span style="color:#555;font-size:9px">${marketItem?'Listed good — market price':'Unlisted good — reduced rate'}</span>`,()=>{
+          player.credits+=sellVal;addXP(Math.round(sellVal/20));
+          pop(`+${sellVal} cr`,'#fff951');
+          log(`Sold ${player.cargoQty}× ${player.cargoType} at ${planet.name} for ${sellVal}cr.`,'Trade');
+          player.cargoType=null;player.cargoQty=0;player.cargoBoughtAt=null;player.deliveries++;
+          openPlanetDialog(planet,true);
+        });
+      }
+    } else {
+      addBtn(mktEl,'[ Cargo hold empty ]',null,'disabled');
+    }
+  }
+
+  // ── CONTRACTS TAB ──
+  const conEl=panelEls['contracts'];
+  if(conEl){
+    const missions=getMissions(planet);
+    if(missions.length===0){
+      conEl.innerHTML='<div style="color:#555;font-size:10px;padding:8px">No contracts available at this location.</div>';
+    } else {
+      missions.forEach(m=>{
+        if(m.done){
+          addBtn(conEl,`✓ ${m.label} [COMPLETE]`,null,'disabled');
+        } else if(!m.accepted){
+          addBtn(conEl,
+            `▶ ${m.label}<br><span style="color:#666;font-size:9px">${m.desc}</span><br><span style="color:#fff951;font-size:9px">Reward: +${m.reward} cr · +${m.repGain} rep · +${m.xpGain} XP</span>`,
+            ()=>{
+              const ok=acceptMission(m);
+              if(ok)notify(`CONTRACT ACCEPTED: ${m.label}`,'#05ffa1');
+              openPlanetDialog(planet,true);
+            });
+        } else {
+          addBtn(conEl,
+            `● ACTIVE: ${m.label}<br><span style="color:#555;font-size:9px">${m.statusText||m.desc}</span><br><span style="color:#333;font-size:9px">Waypoint marked on HUD</span>`,
+            null,'disabled');
+        }
+      });
+    }
+  }
+
+  // ── UPGRADES TAB ──
+  const upgEl=panelEls['upgrades'];
+  if(upgEl){
+    addLbl(upgEl,'Permanent Ship Upgrades');
+    const upgrades=[
+      {key:'shieldBoost',label:'SHIELD BOOST (+25 max shield)',cost:800,
+        effect:()=>{player.maxShield=125;player.shield=Math.min(player.shield+25,player.maxShield)}},
+      {key:'hullBoost',label:'HULL PLATING (+25 max hull)',cost:900,
+        effect:()=>{player.maxHull=125;player.hull=Math.min(player.hull+25,player.maxHull)}},
+      {key:'fuelBoost',label:'FUEL CELL EXT (+30 max fuel)',cost:600,
+        effect:()=>{player.maxFuel=130}},
+      {key:'ammoBoost',label:'AMMO EXPANSION (+15 max ammo)',cost:500,
+        effect:()=>{player.maxAmmo=45}},
+      {key:'laserBoost',label:'LASER UPGRADE (faster, +3 dmg)',cost:1200,effect:()=>{}},
+    ];
+    upgrades.forEach(u=>{
+      if(player.upgrades[u.key]){
+        addBtn(upgEl,`✓ ${u.label} [INSTALLED]`,null,'disabled');
+      } else {
+        const canAfford=player.credits>=u.cost;
+        addBtn(upgEl,
+          `⬆ ${u.label} — ${u.cost} cr${!canAfford?' <span style="color:#ff4444;font-size:9px">NEED '+(u.cost-player.credits)+' MORE</span>':''}`,
+          canAfford?()=>{
+            player.credits-=u.cost;player.upgrades[u.key]=true;u.effect();
+            updateBars();pop('UPGRADED!','#fff951');
+            log(`Installed: ${u.label}.`,'Progress');addXP(50);
+            openPlanetDialog(planet,true);
+          }:null,canAfford?'':'disabled');
+      }
+    });
+  }
+
+  $('pdialog').classList.add('open');
+}
+
+function refreshPlanetStats(){
+  if(!activePlanet)return;
+  const cargoStr=player.cargoQty>0
+    ?`${player.cargoQty}× ${player.cargoType}${player.cargoIsMission?' <span style="color:#ff71ce">[MISSION]</span>':''}`
+    :'EMPTY';
+  $('pdlg-stats').innerHTML=
+    `<span style="color:var(--c4)">${player.credits} cr</span> · `+
+    `FUEL <span style="color:${player.fuel>25?'var(--c3)':'var(--c2)'}">${Math.round(player.fuel)}%</span> · `+
+    `AMMO <span>${player.ammo}/${player.maxAmmo}</span> · `+
+    `SHIELD <span style="color:${player.shield>30?'#aaa':'var(--c2)'}">${Math.round(player.shield)}%</span> · `+
+    `HULL <span style="color:${player.hull>40?'#aaa':player.hull>20?'var(--c4)':'var(--c2)'}">${Math.round(player.hull)}%</span> · `+
+    `CARGO: ${cargoStr}`;
+}
+
+function closePlanetDialog(){
+  $('pdialog').classList.remove('open');
+  inDialog=false;activePlanet=null;
+}
+
+// ── MISSIONS ──
+const activeMissions=[];
+
+function getMissions(planet){
+  if(planet.missions.length>0)return planet.missions;
+  const fid=planet.sys.faction.id;
+  const missions=[];
+  const otherSys=systems.filter(s=>s!==planet.sys);
+  const destSys=RF(otherSys);
+  const destPlanet=destSys?RF(destSys.planets):null;
+
+  if(destPlanet){
+    const good=RF(TRADE_GOODS);
+    const qty=RI(5,12);
+    missions.push({
+      id:'courier_'+planet.name,type:'courier',
+      label:`📦 COURIER: ${good.name} → ${destPlanet.name}`,
+      desc:`Deliver ${qty}× ${good.name} to ${destPlanet.name} in ${destSys.name}.`,
+      reward:RI(120,260),repGain:8,xpGain:25,
+      done:false,accepted:false,active:false,
+      targetPlanet:destPlanet,targetSys:destSys,cargoType:good.name,cargoQty:qty,
+      statusText:`Fly to ${destPlanet.name} in ${destSys.name} and land`,
+      start(){
+        if(player.cargoQty>0){notify('Empty your cargo hold first — sell or deliver existing cargo','#ff4444');return false;}
+        player.cargoType=this.cargoType;player.cargoQty=this.cargoQty;
+        player.cargoIsMission=true;player.cargoBoughtAt=null;
+        log(`Courier: ${this.cargoQty}× ${this.cargoType} to ${this.targetPlanet.name}.`,'Mission');
+        this.active=true;activeMissions.push(this);return true;
+      },
+      complete(){
+        if(this.done)return;this.done=true;this.active=false;
+        player.credits+=this.reward;addRep(fid,this.repGain);addXP(this.xpGain);
+        player.cargoType=null;player.cargoQty=0;player.cargoBoughtAt=null;player.cargoIsMission=false;
+        player.deliveries++;
+        pop(`+${this.reward} cr`,'#fff951');
+        notify(`✓ CONTRACT COMPLETE: ${this.label}`,'#05ffa1');
+        log(`Courier delivered. +${this.reward}cr +${this.repGain}rep.`,'Mission');
+        removeMission(this);
+      }
+    });
+  }
+
+  const enemySys=systems.filter(s=>s.faction.id!==fid);
+  const spawnSys=RF(enemySys.length?enemySys:otherSys);
+  if(spawnSys){
+    missions.push({
+      id:'patrol_'+planet.name,type:'patrol',
+      label:`⚔ INTERCEPT: convoy from ${spawnSys.name}`,
+      desc:`A convoy leaves ${spawnSys.name}. Destroy all ships before it reaches safety.`,
+      reward:RI(200,400),repGain:12,xpGain:40,
+      done:false,accepted:false,active:false,spawnSys,convoy:null,
+      statusText:`Find and destroy convoy departing ${spawnSys.name}`,
+      start(){
+        this.convoy=spawnConvoy({from:this.spawnSys,to:planet.sys});
+        this.active=true;activeMissions.push(this);
+        log(`Intercept: convoy from ${this.spawnSys.name}.`,'Mission');return true;
+      },
+      complete(){
+        if(this.done)return;this.done=true;this.active=false;
+        player.credits+=this.reward;addRep(fid,this.repGain);addXP(this.xpGain);
+        pop(`+${this.reward} cr`,'#fff951');
+        notify(`✓ CONTRACT COMPLETE: ${this.label}`,'#05ffa1');
+        log(`Intercept complete. +${this.reward}cr.`,'Mission');
+        removeMission(this);
+      }
+    });
+  }
+
+  const scanPlanets=planet.sys.planets.filter(p=>!p.scanned&&p.type==='SCAN');
+  if(scanPlanets.length>0){
+    missions.push({
+      id:'survey_'+planet.name,type:'survey',
+      label:`🔬 SURVEY: wilderness worlds in ${planet.sys.name}`,
+      desc:`Survey ${scanPlanets.length} wilderness world(s) in this system. Land and submit data.`,
+      reward:RI(80,160),repGain:6,xpGain:20,
+      done:false,accepted:false,active:false,targetPlanets:scanPlanets,
+      statusText:`Scan ${scanPlanets.length} wilderness world(s) in this system`,
+      start(){this.active=true;activeMissions.push(this);log('Survey mission started.','Mission');return true;},
+      complete(){
+        if(this.done)return;this.done=true;this.active=false;
+        player.credits+=this.reward;addRep(fid,this.repGain);addXP(this.xpGain);
+        pop(`+${this.reward} cr`,'#fff951');
+        notify(`✓ CONTRACT COMPLETE: ${this.label}`,'#05ffa1');
+        log(`Survey complete. +${this.reward}cr.`,'Mission');removeMission(this);
+      }
+    });
+  }
+
+  if(getRep(fid)>=20&&destSys){
+    missions.push({
+      id:'vip_'+planet.name,type:'vip',
+      label:`★ VIP: classified data to ${destSys.name}`,
+      desc:`Carry classified data to ${destSys.name}. Do NOT get destroyed in transit.`,
+      reward:RI(500,900),repGain:20,xpGain:80,
+      done:false,accepted:false,active:false,targetSys:destSys,
+      statusText:`Hyperspace to ${destSys.name} and land at any planet`,
+      start(){this.active=true;activeMissions.push(this);log(`VIP: fly to ${this.targetSys.name}.`,'Mission');return true;},
+      complete(){
+        if(this.done)return;this.done=true;this.active=false;
+        player.credits+=this.reward;addRep(fid,this.repGain);addXP(this.xpGain);
+        pop(`+${this.reward} cr`,'#fff951');
+        notify(`★ VIP CONTRACT COMPLETE`,'#fff951');
+        log(`VIP complete. +${this.reward}cr.`,'Mission');removeMission(this);
+      }
+    });
+  }
+
+  planet.missions=missions;return missions;
+}
+
+function acceptMission(m){
+  if(m.accepted)return false;
+  m.accepted=true;
+  const ok=m.start();
+  if(!ok){m.accepted=false;return false;}
+  refreshMissionList();return true;
+}
+function removeMission(m){
+  const idx=activeMissions.indexOf(m);
+  if(idx>=0)activeMissions.splice(idx,1);
+  refreshMissionList();
+}
+
+function checkMissionKill(ship,best){
+  activeMissions.forEach(m=>{
+    if(!m.active||m.done)return;
+    if(m.type==='patrol'&&m.convoy&&best.kind==='convoy'&&best.cv===m.convoy){
+      if(m.convoy.ships.every(s=>!s.alive))m.complete();
+    }
+  });
+}
+function checkMissionTravel(){
+  activeMissions.forEach(m=>{
+    if(!m.active||m.done)return;
+    if(m.type==='vip'&&m.targetSys===curSys){/* completes on land */}
+  });
+}
+function checkMissionLand(planet){
+  activeMissions.forEach(m=>{
+    if(!m.active||m.done)return;
+    if(m.type==='courier'&&m.targetPlanet===planet){
+      if(player.cargoType===m.cargoType&&player.cargoQty>=m.cargoQty)m.complete();
+      else notify(`Deliver ${m.cargoQty}× ${m.cargoType} here to complete`,'#ff4444');
+    }
+    if(m.type==='vip'&&m.targetSys===planet.sys)m.complete();
+  });
+}
+function checkMissionScan(planet){
+  activeMissions.forEach(m=>{
+    if(!m.active||m.done)return;
+    if(m.type==='survey'&&m.targetPlanets.includes(planet)){
+      if(m.targetPlanets.every(p=>p.scanned))m.complete();
+    }
+  });
+}
+function getMissionWaypoint(){
+  for(const m of activeMissions){
+    if(!m.active||m.done)continue;
+    if(m.type==='courier'&&m.targetPlanet)return{pos:m.targetPlanet.mesh.position.clone(),label:'DELIVER: '+m.targetPlanet.name};
+    if(m.type==='patrol'&&m.convoy){
+      const s=m.convoy.ships.find(s=>s.alive);
+      if(s)return{pos:s.mesh.position.clone(),label:'INTERCEPT CONVOY'};
+      // convoy not yet spawned / en route
+      return{pos:m.spawnSys.position.clone(),label:'CONVOY ORIGIN: '+m.spawnSys.name};
+    }
+    if(m.type==='survey'){
+      const unscan=m.targetPlanets.find(p=>!p.scanned);
+      if(unscan)return{pos:unscan.mesh.position.clone(),label:'SURVEY: '+unscan.name};
+    }
+    if(m.type==='vip'&&m.targetSys)return{pos:m.targetSys.position.clone(),label:'VIP DEST: '+m.targetSys.name};
+  }
+  return null;
+}
+
+// ── INPUT ──
+const keys={};
+let overlayOpen=false;
+window.addEventListener('keydown',e=>{
+  if(inDialog){if(e.key==='Escape')closePlanetDialog();return}
+  if(overlayOpen){if(e.key==='Escape'||e.key.toLowerCase()==='j'||e.key.toLowerCase()==='m')closeOverlay();return}
+  keys[e.key.toLowerCase()]=true;
+  const k=e.key.toLowerCase();
+  if(e.key==='Tab'){e.preventDefault();cycleTarget(e.shiftKey?-1:1);return}
+  if(k==='h'){doHyperspace();return}
+  if(k==='l'){doFireLaser();return}
+  if(k==='f'){doLand();return}
+  if(k==='x'){clearTarget();return}
+  if(k==='j'){openOverlay('log');return}
+  if(k==='m'){openOverlay('map');return}
+  if(k==='c'){openOverlay('missions');return}
+});
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+function doLand(){
+  const pt=getPointedPlanet();
+  const p=pt||(curTarget?.kind==='PLANET'?curTarget.planet:null);
+  if(!p){setMsg('NO PLANET — look toward a planet or TAB to target','#666');return}
+  const d=camera.position.distanceTo(p.mesh.position);
+  if(d>p.radius*2.6){setMsg(`TOO FAR TO LAND — ${Math.round(d-p.radius*2.6)}u away`,'#666');return}
+  checkMissionLand(p);
+  openPlanetDialog(p);
+}
+
+function handleFlight(dt){
+  if(player.dead||inDialog||overlayOpen)return;
+  if(keys['w'])player.thrust=Math.min(1,player.thrust+0.022*dt*60);
+  else if(keys['s'])player.thrust=Math.max(0,player.thrust-0.055*dt*60);
+  else player.thrust=Math.max(0,player.thrust-0.010*dt*60);
+  if(player.thrust>0&&player.fuel>0){
+    player.fuel=Math.max(0,player.fuel-player.thrust*0.18*dt);
+    if(player.fuel<=0){player.thrust=0;setMsg('FUEL EMPTY — land to refuel','#ff4444');}
+  }
+  player.velocity+=(player.thrust*65-player.velocity)*0.05;
+  const rot=0.010;
+  if(keys['arrowup'])camera.rotateX(rot);
+  if(keys['arrowdown'])camera.rotateX(-rot);
+  if(keys['a']||keys['arrowleft'])camera.rotateY(rot);
+  if(keys['d']||keys['arrowright'])camera.rotateY(-rot);
+  if(keys['q'])camera.rotateZ(rot);
+  if(keys['e'])camera.rotateZ(-rot);
+  camera.translateZ(-player.velocity);
+}
+
+// ── UPDATE: CONVOYS ──
+function updateConvoys(dt){
+  for(let ci=convoys.length-1;ci>=0;ci--){
+    const cv=convoys[ci];
+    if(cv.done){convoys.splice(ci,1);continue}
+    const from=cv.from.position,to=cv.to.position;
+    const travelTime=90+from.distanceTo(to)*0.00038;
+    cv.progress=Math.min(1,cv.progress+dt/travelTime);
+
+    const leaderPos=new THREE.Vector3().lerpVectors(from,to,cv.progress);
+    const travelDir=to.clone().sub(from).normalize();
+    const right=new THREE.Vector3().crossVectors(travelDir,new THREE.Vector3(0,1,0)).normalize();
+    if(right.lengthSq()<0.01)right.set(1,0,0);
+
+    const facRep=getRep(cv.faction.id);
+    const playerDist=camera.position.distanceTo(leaderPos);
+
+    cv.ships.forEach((s,idx)=>{
+      if(!s.alive)return;
+      const fo=CONVOY_FORMATION[s.formIdx]||{x:0,y:0,z:idx*900};
+
+      let targetPos;
+      if(s.aggro&&playerDist<35000){
+        // Aggressive: circle and strafe the player
+        const t=Date.now()*0.0008+idx*1.8;
+        const orbit=6000+idx*1200;
+        const strafeOff=new THREE.Vector3(Math.sin(t)*orbit,Math.cos(t*0.4)*1500,Math.cos(t)*orbit);
+        targetPos=camera.position.clone().add(strafeOff);
+      } else {
+        // Formation cruise
+        targetPos=leaderPos.clone()
+          .add(travelDir.clone().multiplyScalar(fo.z))
+          .add(right.clone().multiplyScalar(fo.x))
+          .add(new THREE.Vector3(0,fo.y,0));
+      }
+
+      const lerpSpeed=s.aggro?0.035:0.018;
+      s.mesh.position.lerp(targetPos,lerpSpeed);
+
+      const lookAt=s.aggro&&playerDist<35000?camera.position.clone():
+        s.mesh.position.clone().add(travelDir.clone().multiplyScalar(3000));
+      s.mesh.lookAt(lookAt);
+
+      // Attack conditions: hostile rep OR already aggro
+      if((facRep<=-35||s.aggro)&&(s.type==='COMBAT'||s.type==='ESCORT')){
+        const d=camera.position.distanceTo(s.mesh.position);
+        if(d<28000){
+          s.aggro=true;s.laserT-=dt;
+          if(s.laserT<=0){
+            s.laserT=R(1.4,3.5);
+            fireAtPlayer(s.mesh.position.clone());
+          }
+        }
+      }
+    });
+
+    if(cv.progress>=1){cv.ships.forEach(s=>{if(s.alive)scene.remove(s.mesh)});cv.done=true;}
+  }
+}
+
+function updateBounties(dt){
+  for(let i=bountyHunters.length-1;i>=0;i--){
+    const bs=bountyHunters[i];
+    if(!bs.alive){scene.remove(bs.mesh);bountyHunters.splice(i,1);continue}
+    const dir=camera.position.clone().sub(bs.mesh.position).normalize();
+    const t=Date.now()*0.001+i;
+    const strafe=new THREE.Vector3(Math.sin(t*1.2)*800,Math.cos(t*0.7)*400,Math.cos(t*0.9)*800);
+    const moveTarget=camera.position.clone().add(strafe).add(dir.multiplyScalar(-5000));
+    bs.mesh.position.lerp(moveTarget,0.04);
+    bs.mesh.lookAt(camera.position);
+    bs.laserT-=dt;
+    if(bs.laserT<=0){
+      bs.laserT=R(0.9,2.8);
+      fireAtPlayer(bs.mesh.position.clone());
+    }
+    if(camera.position.distanceTo(bs.mesh.position)>110000){
+      scene.remove(bs.mesh);bountyHunters.splice(i,1);
+    }
+  }
+}
+
+function updateLasers(dt){
+  for(let i=lasers.length-1;i>=0;i--){
+    const l=lasers[i];l.life-=dt;
+    l.mesh.material.opacity=Math.max(0,l.life/l.maxLife);
+    if(l.life<=0){scene.remove(l.mesh);lasers.splice(i,1);}
+  }
+}
+
+function checkCollisions(){
+  // Check all planets in current system AND any nearby system
+  const checkSystems=new Set([curSys]);
+  systems.forEach(s=>{if(camera.position.distanceTo(s.position)<100000)checkSystems.add(s);});
+  checkSystems.forEach(sys=>{
+    sys.planets.forEach(p=>{
+      const dist=camera.position.distanceTo(p.mesh.position);
+      if(dist<p.radius*7){
+        const pull=(p.radius*7-dist)*0.0000008;
+        const dir=p.mesh.position.clone().sub(camera.position).normalize();
+        camera.position.add(dir.multiplyScalar(pull));
+      }
+      const minD=p.radius*1.2;
+      if(dist<minD){
+        const dir=camera.position.clone().sub(p.mesh.position).normalize();
+        camera.position.copy(p.mesh.position.clone().add(dir.multiplyScalar(minD)));
+        player.velocity*=0.3;
+      }
+    });
+  });
+}
+
+// ── WAYPOINTS ──
+function w2s(pos){
+  const p=pos.clone().project(camera);
+  return{x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight,behind:p.z>1};
+}
+const WP_COLS={PLANET:'#01cdfe',STAR:'#ffffff',SHIP:'#ff4444',BOUNTY:'#ff0000',MISSION:'#fff951'};
+
+function updateWaypoints(){
+  elWpl.innerHTML='';
+  const addWP=(pos,label,col)=>{
+    const sc=w2s(pos);const dist=Math.round(camera.position.distanceTo(pos));
+    let arrow='';
+    const outX=sc.x<20||sc.x>innerWidth-20,outY=sc.y<20||sc.y>innerHeight-20;
+    if(sc.behind||outX||outY){
+      const dx=sc.x-innerWidth/2,dy=sc.y-innerHeight/2;
+      const a=Math.atan2(dy,dx);
+      arrow=['→','↘','↓','↙','←','↖','↑','↗'][Math.round(((a+Math.PI)/(Math.PI*2))*8)%8]+' ';
+    }
+    const cx=clamp(sc.x,20,innerWidth-20),cy=clamp(sc.y,20,innerHeight-20);
+    const d=document.createElement('div');
+    d.className='wp';d.style.left=cx+'px';d.style.top=cy+'px';d.style.color=col;
+    d.innerHTML=`<span class="wp-inner">${arrow}${label} · ${dist>9999?(dist/1000).toFixed(1)+'Ku':dist+'u'}</span>`;
+    elWpl.appendChild(d);
+  };
+  const mwp=getMissionWaypoint();
+  if(mwp)addWP(mwp.pos,mwp.label,WP_COLS.MISSION);
+  if(curTarget&&curTarget.pos){
+    const pos=curTarget.pos();
+    const label=curTarget.kind==='PLANET'?curTarget.planet.name:
+      curTarget.kind==='STAR'?curTarget.sys.name:
+      curTarget.kind==='SHIP'?'CONVOY '+curTarget.ship.type:'BOUNTY';
+    const col=curTarget.kind==='PLANET'?WP_COLS.PLANET:
+      curTarget.kind==='BOUNTY'?WP_COLS.BOUNTY:WP_COLS.SHIP;
+    addWP(pos,label,col);
+  }
+  if(selectedDest&&selectedDest!==curSys)
+    addWP(selectedDest.position,'JUMP → '+selectedDest.name,'#b967ff');
+}
+
+function drawRadar(){
+  const C=60,R2=58;
+  rctx.clearRect(0,0,120,120);
+  rctx.strokeStyle='rgba(1,205,254,0.18)';rctx.lineWidth=1;
+  rctx.beginPath();rctx.arc(C,C,R2,0,Math.PI*2);rctx.stroke();
+  rctx.beginPath();rctx.arc(C,C,R2*0.5,0,Math.PI*2);rctx.stroke();
+  rctx.beginPath();rctx.moveTo(C,2);rctx.lineTo(C,118);rctx.stroke();
+  rctx.beginPath();rctx.moveTo(2,C);rctx.lineTo(118,C);rctx.stroke();
+  rctx.fillStyle='#fff';rctx.fillRect(C-2,C-2,4,4);
+  const sc=0.00042;
+  const qi=camera.quaternion.clone().invert();
+  systems.forEach(s=>{
+    const dv=new THREE.Vector3().subVectors(s.position,camera.position).applyQuaternion(qi);
+    const rx=C+dv.x*sc,ry=C+dv.z*sc;
+    if(Math.hypot(rx-C,ry-C)<R2){
+      rctx.fillStyle=s===curSys?'#fff':s.capital?'#fff951':s.faction.css+'aa';
+      rctx.fillRect(rx-1.5,ry-1.5,3,3);
+    }
+  });
+  convoys.forEach(cv=>cv.ships.forEach(s=>{
+    if(!s.alive)return;
+    const dv=new THREE.Vector3().subVectors(s.mesh.position,camera.position).applyQuaternion(qi);
+    const rx=C+dv.x*sc,ry=C+dv.z*sc;
+    if(Math.hypot(rx-C,ry-C)<R2){
+      rctx.fillStyle=s.aggro?'#ff0000':'#ff4444';rctx.beginPath();rctx.arc(rx,ry,2.5,0,Math.PI*2);rctx.fill();
+    }
+  }));
+  bountyHunters.forEach(bs=>{
+    if(!bs.alive)return;
+    const dv=new THREE.Vector3().subVectors(bs.mesh.position,camera.position).applyQuaternion(qi);
+    const rx=C+dv.x*sc,ry=C+dv.z*sc;
+    if(Math.hypot(rx-C,ry-C)<R2){
+      rctx.fillStyle='#ff0000';rctx.beginPath();rctx.arc(rx,ry,3.5,0,Math.PI*2);rctx.fill();
+    }
+  });
+}
+
+// ── OVERLAY ──
+function openOverlay(tab){overlayOpen=true;$('overlay').classList.add('open');showTab(tab||'log');}
+function closeOverlay(){overlayOpen=false;$('overlay').classList.remove('open');}
+function showTab(tab){
+  document.querySelectorAll('.ovl-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ovl-page').forEach(p=>p.classList.remove('active'));
+  $('tab-'+tab)?.classList.add('active');
+  $('page-'+tab)?.classList.add('active');
+  if(tab==='log')renderLog();
+  if(tab==='map')renderMap();
+  if(tab==='missions')renderMissions();
+  if(tab==='codex')renderCodex();
+  if(tab==='factions')renderFactions();
+}
+
+const logEntries=[];
+function log(msg,cat='General'){
+  const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  logEntries.unshift({t,msg,cat});if(logEntries.length>80)logEntries.pop();
+}
+const CAT_COLS={Travel:'#01cdfe',Combat:'#ff4444',Trade:'#fff951',Mission:'#05ffa1',Exploration:'#ff71ce',Progress:'#b967ff',General:'#555'};
+function renderLog(){
+  const cats=['All','Travel','Combat','Trade','Mission','Exploration','Progress'];
+  const el=$('page-log');
+  el.innerHTML=`<div class="ovl-h">NAVIGATION & ACTIVITY LOG</div>
+    <div style="margin-bottom:10px">${cats.map(c=>`<button class="ovl-btn" id="lbtn-${c}" onclick="filterLog('${c}')">${c}</button>`).join('')}</div>
+    <div id="log-entries"></div>`;
+  $('lbtn-All').classList.add('active');
+  window.filterLog=function(cat){
+    document.querySelectorAll('#page-log .ovl-btn').forEach(b=>b.classList.remove('active'));
+    $('lbtn-'+cat)?.classList.add('active');
+    const entries=logEntries.filter(e=>cat==='All'||e.cat===cat);
+    $('log-entries').innerHTML=entries.map(e=>{
+      const cc=CAT_COLS[e.cat]||'#555';
+      return `<div class="log-entry"><span class="log-time">${e.t}</span> <span class="log-cat" style="background:${cc}22;color:${cc}">${e.cat}</span>${e.msg}</div>`;
+    }).join('')||'<div class="ovl-p">No entries yet.</div>';
+  };
+  window.filterLog('All');
+}
+function renderMissions(){
+  const el=$('page-missions');
+  if(!activeMissions.length){el.innerHTML='<div class="ovl-h">ACTIVE CONTRACTS</div><div class="ovl-p">No active contracts. Land on planets (F) to pick up work.</div>';return}
+  el.innerHTML=`<div class="ovl-h">ACTIVE CONTRACTS (${activeMissions.length})</div>`+
+    activeMissions.map(m=>`
+    <div class="mission-card">
+      <div class="mc-title">${m.label}</div>
+      <div class="mc-desc">${m.desc}</div>
+      <div class="mc-reward">Reward: ${m.reward} cr · +${m.repGain} rep · +${m.xpGain} XP</div>
+      <div class="mc-status" style="color:${m.done?'#05ffa1':'#fff951'}">▶ ${m.statusText||'In progress'}</div>
+      <div class="mc-status" style="color:#333;margin-top:2px">Waypoint marked in yellow on HUD</div>
+    </div>`).join('');
+}
+function refreshMissionList(){
+  if(overlayOpen&&$('page-missions').classList.contains('active'))renderMissions();
+  const active=activeMissions.filter(m=>m.active&&!m.done);
+  if(active.length>0)setObj(`OBJECTIVE: ${active[0].label}`);
+  else setObj('');
+}
+function renderFactions(){
+  const el=$('page-factions');
+  el.innerHTML=`<div class="ovl-h">FACTION RELATIONS</div>
+  <div class="ovl-p">Your standing with each faction affects their behavior.<br>
+  Below −35 rep: combat ships attack you. Below −60 rep: bounty hunters are dispatched.</div>`+
+    FACTIONS.map(f=>{
+      const rep=getRep(f.id),col=repColor(rep);
+      const pct=Math.abs(rep)/100*50;
+      const left=rep>=0?50:(50-pct);
+      const sysList=systems.filter(s=>s.faction.id===f.id).map(s=>s.name+(s.capital?' ★':'')).join(', ');
+      return `<div class="faction-card">
+        <div class="fc-name" style="color:${f.css}">${f.name}</div>
+        <div class="fc-rep" style="color:${col}">REP: ${rep} — ${repLabel(rep)}</div>
+        <div class="rep-bar-wrap"><div class="rep-bar-center"></div>
+          <div class="rep-bar-fill" style="width:${pct}%;left:${left}%;background:${rep>=0?'#05ffa1':'#ff4444'}"></div>
+        </div>
+        <div class="fc-desc" style="margin-top:6px">${f.desc}</div>
+        <div class="fc-desc" style="margin-top:4px;color:#333">SYSTEMS: ${sysList}</div>
+        <div class="fc-desc" style="margin-top:4px;color:${rep<f.agro_at?'#ff4444':rep<f.hostile_at?'#fff951':'#333'}">
+          ${rep<f.agro_at?'⚠ ENEMY: bounty hunters active':rep<f.hostile_at?'⚠ HOSTILE: combat ships attack':'Status: normal'}
+        </div>
+      </div>`;
+    }).join('');
+}
+function renderCodex(){
+  const el=$('page-codex');
+  el.innerHTML=`<div class="ovl-h">CORSAIR CODEX</div>
+  <div class="ovl-p"><b style="color:#01cdfe">FLIGHT</b><br>
+  W/S — Throttle. ARROWS or A/D — Pitch/Yaw. Q/E — Roll. Flying toward a new star system will automatically update your current system.</div>
+  <div class="ovl-p"><b style="color:#05ffa1">TRADING</b><br>
+  Buy goods at one system's market and sell at another system for profit. You CANNOT sell cargo in the same system you bought it — cross-system trade only. Mission cargo cannot be sold on the open market.</div>
+  <div class="ovl-p"><b style="color:#ff71ce">COMBAT</b><br>
+  L — Fire laser (range &lt;22,000u). Ammo limited; restock at Outposts or Capitals.<br>
+  Hitting a convoy triggers its combat ships to aggressively strafe you. Destroy all ships to bust the convoy.</div>
+  <div class="ovl-p"><b style="color:#ff4444">DANGER</b><br>
+  Convoys fire back when aggro. Bounty hunters strafe and dodge. Losing a ship costs 25% credits and your cargo.
+  Keep faction rep above −35 to avoid combat ships, above −60 to avoid bounty hunters.</div>
+  <div class="ovl-p"><b style="color:#b967ff">CONTRACTS</b><br>
+  Land on planets (F) to view contracts. Active mission waypoints glow yellow on HUD and radar. Press C to view active contracts.</div>
+  <div class="ovl-p"><b style="color:#fff951">LANDING</b><br>
+  Point your ship toward any planet and press F when close enough. The target HUD shows distance to landing range. You do NOT need to have a planet explicitly targeted — just point at it.</div>
+  <div class="ovl-p" style="margin-top:10px;color:#333">
+  STATS: Kills: ${player.kills} · Deliveries: ${player.deliveries} · Planets visited: ${player.planetsVisited.size} · Convoys busted: ${player.convoysBusted}</div>`;
+}
+
+// ── MAP — Voronoi territory visualization ──
+function renderMap(){
+  const c=$('gmap');if(!c)return;
+  c.width=c.clientWidth||800;c.height=Math.max(c.clientHeight||500,300);
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.fillStyle='#000008';ctx.fillRect(0,0,W,H);
+
+  const toS=p=>({x:(p.x/GR)*W*0.42+W/2,y:-(p.z/GR)*H*0.42+H/2});
+
+  // Voronoi territory shading — pixel sampled with slight noise for organic borders
+  const STEP=4;
+  for(let py=0;py<H;py+=STEP){
+    for(let px=0;px<W;px+=STEP){
+      let d1=Infinity,d2=Infinity;
+      let f1=null,f2=null;
+      for(const s of systems){
+        const sp=toS(s.position);
+        // Perlin-like warp for organic border feel
+        const warp=Math.sin(px*0.045+s.id*2.4)*Math.cos(py*0.045+s.id*1.7)*16;
+        const d=Math.hypot(px-sp.x,py-sp.y)+warp;
+        if(d<d1){d2=d1;f2=f1;d1=d;f1=s.faction;}
+        else if(d<d2){d2=d;f2=s.faction;}
+      }
+      if(!f1)continue;
+      const col=parseInt(f1.css.slice(1),16);
+      const r=(col>>16)&255,g=(col>>8)&255,b=col&255;
+      const isBorder=f2&&f1.id!==f2.id&&(d2-d1)<STEP*2.8;
+      if(isBorder){
+        ctx.fillStyle=`rgba(${r},${g},${b},0.6)`;
+      } else {
+        const alpha=Math.max(0,0.1-d1*0.00048);
+        if(alpha<0.005)continue;
+        ctx.fillStyle=`rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+      }
+      ctx.fillRect(px,py,STEP,STEP);
+    }
+  }
+
+  // Grid overlay
+  ctx.strokeStyle='rgba(1,205,254,0.04)';ctx.lineWidth=1;
+  for(let i=0;i<W;i+=W/8){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke()}
+  for(let i=0;i<H;i+=H/6){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke()}
+
+  // Convoy routes
+  convoys.forEach(cv=>{
+    const f=toS(cv.from.position),t=toS(cv.to.position);
+    ctx.save();ctx.setLineDash([5,4]);ctx.strokeStyle=cv.faction.css+'55';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(t.x,t.y);ctx.stroke();
+    const mp={x:f.x+(t.x-f.x)*cv.progress,y:f.y+(t.y-f.y)*cv.progress};
+    ctx.beginPath();ctx.arc(mp.x,mp.y,2.5,0,Math.PI*2);ctx.fillStyle='#ccc';ctx.fill();
+    ctx.restore();
+  });
+
+  // Selected jump route
+  if(selectedDest&&selectedDest!==curSys){
+    const cs=toS(curSys.position),ds=toS(selectedDest.position);
+    ctx.save();ctx.setLineDash([8,5]);ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(cs.x,cs.y);ctx.lineTo(ds.x,ds.y);ctx.stroke();ctx.restore();
+  }
+
+  // Mission waypoint route
+  const mwp=getMissionWaypoint();
+  if(mwp){
+    const mV3=new THREE.Vector3(mwp.pos.x,mwp.pos.y,mwp.pos.z);
+    const mSys=systems.reduce((best,s)=>s.position.distanceTo(mV3)<best.position.distanceTo(mV3)?s:best,systems[0]);
+    if(mSys!==curSys){
+      const cs=toS(curSys.position),ms=toS(mSys.position);
+      ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle='#fff951aa';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(cs.x,cs.y);ctx.lineTo(ms.x,ms.y);ctx.stroke();ctx.restore();
+    }
+  }
+
+  // Systems
+  systems.forEach(s=>{
+    const sp=toS(s.position);
+    const fac=s.faction;
+    const isCur=s===curSys,isSel=s===selectedDest;
+    const r=isCur?7:s.capital?5:3;
+    ctx.beginPath();ctx.arc(sp.x,sp.y,r,0,Math.PI*2);
+    ctx.fillStyle=isCur?'#fff':fac.css;ctx.fill();
+    if(s.capital){
+      ctx.beginPath();ctx.arc(sp.x,sp.y,r+4,0,Math.PI*2);
+      ctx.strokeStyle=fac.css+'88';ctx.lineWidth=1;ctx.stroke();
+    }
+    if(isSel&&!isCur){
+      ctx.beginPath();ctx.arc(sp.x,sp.y,r+6,0,Math.PI*2);
+      ctx.strokeStyle='#ffffff99';ctx.lineWidth=1.5;ctx.stroke();
+    }
+    ctx.fillStyle='#aaa';ctx.font='9px Courier New';
+    ctx.fillText((s.capital?'★ ':'')+s.name,sp.x+9,sp.y+3);
+  });
+
+  // Player dot
+  const pp=toS(camera.position);
+  ctx.beginPath();ctx.arc(pp.x,pp.y,5,0,Math.PI*2);ctx.fillStyle='#05ffa1';ctx.fill();
+  ctx.fillStyle='#05ffa1';ctx.font='9px Courier New';ctx.fillText('YOU',pp.x+7,pp.y-4);
+
+  $('map-legend').innerHTML=FACTIONS.map(f=>`<span style="color:${f.css}">● ${f.name}</span>`).join(' &nbsp; ')+
+    ' &nbsp; <span style="color:#fff">○ current</span> <span style="color:#aaa">○ selected</span>';
+}
+
+// ── NOTIFICATIONS ──
+function notify(txt,col='#fff951'){
+  const el=document.createElement('div');
+  el.className='notif-item';el.style.borderLeftColor=col||'#fff951';el.textContent=txt;
+  $('notif').appendChild(el);setTimeout(()=>el.remove(),4500);
+}
+function pop(txt,col){
+  const el=document.createElement('div');el.className='cpop';el.textContent=txt;
+  el.style.color=col||'#fff951';
+  el.style.left=(innerWidth/2+R(-80,80))+'px';el.style.top=(innerHeight/2-80+R(-30,30))+'px';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1800);
+}
+
+// ── NAV CHART ──
+function refreshDest(){
+  const q=elDestSearch.value.trim().toLowerCase();
+  let items=systems.map(s=>({s,d:camera.position.distanceTo(s.position)}));
+  if(q)items=items.filter(({s})=>s.name.toLowerCase().includes(q)||s.faction.name.toLowerCase().includes(q));
+  items.sort((a,b)=>a.d-b.d);
+  elDestList.innerHTML='';
+  items.forEach(({s,d})=>{
+    const div=document.createElement('div');
+    div.className='di'+(s===selectedDest?' sel':'');
+    const rep=getRep(s.faction.id),repC=repColor(rep);
+    div.innerHTML=`<div class="di-name">${s.capital?'★ ':''}<b>${s.name}</b>${s===curSys?' [HERE]':''}</div>
+      <div class="di-sub">${s.faction.name} · ${(d/1000).toFixed(0)}Ku · <span style="color:${repC}">REP:${rep}</span></div>`;
+    div.onclick=()=>{selectedDest=s;refreshDest();setMsg(`DESTINATION: ${s.name} — press H to jump`)};
+    elDestList.appendChild(div);
+  });
+}
+elDestSearch.addEventListener('input',refreshDest);
+elDestSearch.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const f=elDestList.querySelector('.di');if(f)f.click();}
+  e.stopPropagation();
+});
+elDestSearch.addEventListener('click',e=>e.stopPropagation());
+
+// ── MAIN LOOP ──
+let lastT=performance.now();
+let sysCheckTimer=0;
+
+function animate(now){
+  requestAnimationFrame(animate);
+  const dt=Math.min((now-lastT)/1000,0.05);lastT=now;
+
+  if(!player.dead&&!inDialog&&!overlayOpen)handleFlight(dt);
+  if(!player.dead)checkCollisions();
+
+  // System proximity check (every 0.5s for performance)
+  sysCheckTimer+=dt;
+  if(sysCheckTimer>0.5){sysCheckTimer=0;updateCurrentSystem();}
+
+  // Camera shake
+  if(player.camShake>0){
+    camera.position.add(V3(
+      (Math.random()-0.5)*player.camShake*0.004,
+      (Math.random()-0.5)*player.camShake*0.004,
+      (Math.random()-0.5)*player.camShake*0.002
+    ));
+    player.camShake*=0.82;
+    if(player.camShake<2)player.camShake=0;
+  }
+
+  // Orbits
+  systems.forEach(sys=>{
+    sys.planets.forEach(p=>{
+      p.orbitA+=p.orbitSpeed;
+      p.mesh.position.set(
+        sys.position.x+Math.cos(p.orbitA)*p.orbitR,
+        sys.position.y+Math.sin(p.incl)*p.orbitR*0.06,
+        sys.position.z+Math.sin(p.orbitA)*p.orbitR
+      );
+      p.mesh.rotation.y+=0.0012;
+    });
+    sys.belts.forEach(b=>{b.mesh.rotation.y+=b.speed;});
+  });
+
+  // Parallax stars
+  starLayers.forEach(l=>{l.position.copy(camera.position).multiplyScalar(l.userData.pf)});
+
+  // Convoy spawning
+  convoyTimer-=dt;if(convoyTimer<=0){convoyTimer=R(30,90);spawnConvoy();}
+
+  updateConvoys(dt);
+  updateBounties(dt);
+  updateLasers(dt);
+  updateOrbs(dt);
+
+  // Shield regen
+  shieldRegenT+=dt;
+  if(shieldRegenT>6&&player.shield<player.maxShield){
+    player.shield=Math.min(player.maxShield,player.shield+1.5*dt);updateBars();
+  }
+
+  if(hyperCooldown>0)hyperCooldown--;
+  if(player.laserCooldown>0)player.laserCooldown--;
+
+  // Bounty spawning
+  bountyCheckTimer+=dt;
+  if(bountyCheckTimer>25){
+    bountyCheckTimer=0;
+    FACTIONS.forEach(fac=>{
+      if(getRep(fac.id)<=-60&&bountyHunters.filter(b=>b.faction.id===fac.id).length===0)
+        spawnBountyHunter(fac);
+    });
+  }
+
+  // Message fade
+  if(msgTimer>0)msgTimer-=dt;
+  else if(elMsg.style.color!=='#333')elMsg.style.color='#333';
+
+  // Live stat refresh in planet dialog
+  if(inDialog)refreshPlanetStats();
+
+  // HUD
+  elThrust.textContent=Math.round(player.thrust*100)+'%';
+  elSpeed.textContent=Math.round(player.velocity*10);
+  elCreds.textContent=player.credits+' cr';
+  elAmmo.textContent=player.ammo+'/'+player.maxAmmo;
+  elCargo.textContent=player.cargoQty>0
+    ?`${player.cargoQty}× ${player.cargoType}${player.cargoIsMission?' [M]':''}`:'EMPTY';
+  elSys.textContent=curSys.name;
+  elFac.textContent=curSys.faction.name;
+  updateTargetHUD();
+  updateWaypoints();
+  drawRadar();
+  refreshMissionList();
+
+  renderer.render(scene,camera);
+}
+
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+updateBars();rebuildTargets();refreshDest();updateRankBar();
+log('CORSAIR systems online. Galaxy initialized.','General');
+log(`Starting in ${curSys.name} (${curSys.faction.name}). ${systems.length} systems across 4 factions.`,'General');
+log('TIP: Press F while near a planet to land. Point at any planet — no need to target it first.','General');
+log('TIP: Cargo must be sold in a different system from where it was bought. Mission cargo cannot be sold.','General');
+setMsg('CORSAIR ONLINE — F: LAND · H: HYPERSPACE · J: JOURNAL · M: MAP','#b967ff');
+convoyTimer=8;
+animate(performance.now());
+</script>
+</body>
+</html>
