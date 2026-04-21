@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VOID RUNNER — Retrowave Games</title>
+  <meta name="description" content="VOID RUNNER – dodge neon asteroids in this retro-styled arcade survival game. How long can you last?" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://2026retrowavegames-jpg.github.io/voidrunner.html" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cyan: #00ffff;
+      --pink: #ff6ec7;
+      --yellow: #ffff00;
+      --bg: #0a0015;
+      --purple: #b400ff;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      font-family: 'Orbitron', sans-serif;
+      color: #fff;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: bloom-pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes bloom-pulse {
+      0%,100% { filter: drop-shadow(0 0 6px #00ffff55) drop-shadow(0 0 10px #ff00ff22); }
+      50%      { filter: drop-shadow(0 0 10px #00ffff88) drop-shadow(0 0 14px #ff00ff33); }
+    }
+
+    /* ── stars ── */
+    .stars {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 25% 8%,  rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 22%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 55% 5%,  rgba(255,255,255,0.9) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 10%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 92% 28%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 33% 42%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 78% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 18% 70%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 45% 60%, rgba(255,255,255,0.4) 0%, transparent 100%);
+    }
+
+    /* ── retro sun ── */
+    .sun {
+      position: fixed; top: 8%; left: 50%; transform: translateX(-50%);
+      width: 140px; height: 140px; border-radius: 50%;
+      background: linear-gradient(to bottom, #ff6ec7 0%, #ff9d00 55%, #ff6ec7 100%);
+      z-index: 1; overflow: hidden; pointer-events: none;
+    }
+    .sun-stripe { position: absolute; left: 0; right: 0; background: var(--bg); }
+    .sun-stripe:nth-child(1) { top: 55%; height: 7px; }
+    .sun-stripe:nth-child(2) { top: 68%; height: 9px; }
+    .sun-stripe:nth-child(3) { top: 81%; height: 11px; }
+    .sun-stripe:nth-child(4) { top: 94%; height: 14px; }
+
+    /* ── grid floor ── */
+    .grid-floor {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 45%; z-index: 0; pointer-events: none;
+      background:
+        linear-gradient(to bottom, transparent 0%, rgba(180,0,255,0.18) 100%),
+        linear-gradient(#00ffff33 1px, transparent 1px),
+        linear-gradient(90deg, #00ffff33 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      transform-origin: top center;
+      transform: perspective(500px) rotateX(55deg);
+      animation: grid-move 1.2s linear infinite;
+    }
+    @keyframes grid-move {
+      from { background-position: 0 0, 0 0, 0 0; }
+      to   { background-position: 0 0, 0 120px, 0 120px; }
+    }
+
+    /* ── layout ── */
+    .game-wrapper {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 480px; max-width: 96vw;
+    }
+
+    .game-title {
+      font-size: clamp(1rem, 4vw, 1.4rem);
+      font-weight: 900; letter-spacing: 0.2em;
+      color: var(--cyan);
+      text-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(0,255,255,0.3);
+    }
+
+    .score-board {
+      display: flex; gap: 1.5rem;
+    }
+
+    .score-item {
+      text-align: right;
+    }
+    .score-label {
+      font-size: 0.45rem; letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.4); text-transform: uppercase;
+    }
+    .score-value {
+      font-size: 0.85rem; font-weight: 700;
+      color: var(--pink);
+      text-shadow: 0 0 10px var(--pink);
+    }
+
+    /* ── canvas container ── */
+    .canvas-wrapper {
+      position: relative;
+      border: 1px solid rgba(0,255,255,0.3);
+      border-radius: 4px;
+      overflow: hidden;
+      background: rgba(0,0,20,0.85);
+    }
+
+    /* corner brackets */
+    .c-corner {
+      position: absolute; width: 14px; height: 14px;
+      border-color: var(--cyan); border-style: solid; z-index: 3;
+    }
+    .c-tl { top: 6px; left: 6px;  border-width: 2px 0 0 2px; }
+    .c-tr { top: 6px; right: 6px; border-width: 2px 2px 0 0; }
+    .c-bl { bottom: 6px; left: 6px;  border-width: 0 0 2px 2px; }
+    .c-br { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
+
+    /* scanlines overlay */
+    .scanlines {
+      position: absolute; inset: 0; pointer-events: none; z-index: 2;
+      background: repeating-linear-gradient(
+        0deg, rgba(0,0,0,0.08) 0px, transparent 1px, transparent 3px
+      );
+    }
+
+    canvas { display: block; }
+
+    /* ── overlay screens ── */
+    .overlay {
+      position: absolute; inset: 0; z-index: 10;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,20,0.92);
+      gap: 0.8rem;
+      transition: opacity 0.3s;
+    }
+    .overlay.hidden { display: none; }
+
+    .overlay-title {
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      font-weight: 900; letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-shadow: 0 0 30px var(--cyan);
+    }
+    .overlay-sub {
+      font-size: 0.6rem; letter-spacing: 0.3em;
+      color: rgba(255,255,255,0.4); text-transform: uppercase;
+    }
+    .overlay-score {
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--pink);
+      text-shadow: 0 0 15px var(--pink);
+      letter-spacing: 0.1em;
+    }
+    .overlay-best {
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--yellow);
+      text-shadow: 0 0 10px var(--yellow);
+      letter-spacing: 0.15em;
+    }
+
+    .btn {
+      margin-top: 0.5rem;
+      padding: 0.6rem 2rem;
+      background: transparent;
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.25em; text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover {
+      background: var(--cyan);
+      color: var(--bg);
+      box-shadow: 0 0 20px var(--cyan);
+    }
+
+    .divider-line {
+      width: 160px; height: 1px;
+      background: linear-gradient(to right, transparent, var(--cyan), transparent);
+      opacity: 0.4;
+    }
+
+    /* ── lives display ── */
+    .lives-bar {
+      display: flex; gap: 0.4rem; align-items: center;
+    }
+    .life-icon { color: var(--pink); font-size: 0.9rem; transition: opacity 0.3s; }
+    .life-icon.lost { opacity: 0.15; }
+
+    /* ── controls hint ── */
+    .controls-hint {
+      font-size: 0.45rem; letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.2); text-transform: uppercase;
+    }
+
+    /* back link */
+    .back-link {
+      font-size: 0.5rem; letter-spacing: 0.25em; text-transform: uppercase;
+      color: rgba(255,255,255,0.2); text-decoration: none;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--pink); }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="sun">
+    <div class="sun-stripe"></div>
+    <div class="sun-stripe"></div>
+    <div class="sun-stripe"></div>
+    <div class="sun-stripe"></div>
+  </div>
+  <div class="grid-floor"></div>
+
+  <div class="game-wrapper">
+
+    <div class="header-bar">
+      <span class="game-title">VOID RUNNER</span>
+      <div class="score-board">
+        <div class="score-item">
+          <div class="score-label">Score</div>
+          <div class="score-value" id="scoreDisplay">0</div>
+        </div>
+        <div class="score-item">
+          <div class="score-label">Best</div>
+          <div class="score-value" id="bestDisplay">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-wrapper">
+      <div class="c-corner c-tl"></div>
+      <div class="c-corner c-tr"></div>
+      <div class="c-corner c-bl"></div>
+      <div class="c-corner c-br"></div>
+      <div class="scanlines"></div>
+
+      <canvas id="gameCanvas" width="480" height="520"></canvas>
+
+      <!-- START SCREEN -->
+      <div class="overlay" id="startScreen">
+        <div class="overlay-title">VOID RUNNER</div>
+        <div class="divider-line"></div>
+        <div class="overlay-sub">dodge the asteroids · survive the void</div>
+        <div class="overlay-sub" style="margin-top:0.3rem">← → arrow keys &nbsp;|&nbsp; A D keys &nbsp;|&nbsp; touch</div>
+        <button class="btn" id="startBtn">LAUNCH ▶</button>
+        <div class="controls-hint" style="margin-top:0.3rem">3 lives · speed increases over time</div>
+      </div>
+
+      <!-- GAME OVER SCREEN -->
+      <div class="overlay hidden" id="gameOverScreen">
+        <div class="overlay-title" style="color:var(--pink);text-shadow:0 0 30px var(--pink)">DESTROYED</div>
+        <div class="divider-line"></div>
+        <div class="overlay-score" id="finalScore"></div>
+        <div class="overlay-best" id="finalBest"></div>
+        <button class="btn" id="restartBtn">RETRY ▶</button>
+        <a href="index.html" class="back-link" style="margin-top:0.4rem">◂ back to hangar</a>
+      </div>
+
+    </div>
+
+    <!-- lives + hint -->
+    <div style="display:flex;align-items:center;justify-content:space-between;width:480px;max-width:96vw;">
+      <div class="lives-bar" id="livesBar">
+        <span class="life-icon" id="life1">♦</span>
+        <span class="life-icon" id="life2">♦</span>
+        <span class="life-icon" id="life3">♦</span>
+      </div>
+      <div class="controls-hint" id="levelDisplay">SECTOR 1</div>
+    </div>
+
+    <a href="index.html" class="back-link">◂ return to hangar</a>
+  </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const W = canvas.width;
+const H = canvas.height;
+
+// ── state ──
+let gameState = 'idle'; // idle | playing | dead
+let score = 0;
+let best = parseInt(localStorage.getItem('voidrunner_best') || '0');
+let lives = 3;
+let frame = 0;
+let speed = 1;
+let spawnRate = 60;
+let lastSpawn = 0;
+
+// ── player ──
+const player = {
+  x: W / 2,
+  y: H - 70,
+  w: 34,
+  h: 40,
+  speed: 5,
+  dx: 0,
+  invincible: 0,
+  trail: [],
+};
+
+// ── input ──
+const keys = {};
+document.addEventListener('keydown', e => { keys[e.key] = true; });
+document.addEventListener('keyup',   e => { keys[e.key] = false; });
+
+// touch
+let touchX = null;
+canvas.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; e.preventDefault(); }, { passive: false });
+canvas.addEventListener('touchmove',  e => { touchX = e.touches[0].clientX; e.preventDefault(); }, { passive: false });
+canvas.addEventListener('touchend',   e => { touchX = null; }, { passive: false });
+
+// ── asteroids ──
+let asteroids = [];
+
+function spawnAsteroid() {
+  const size = 14 + Math.random() * 22;
+  const colors = ['#00ffff', '#ff6ec7', '#b400ff', '#ff9900'];
+  asteroids.push({
+    x: size + Math.random() * (W - size * 2),
+    y: -size,
+    r: size,
+    speed: (1.5 + Math.random() * 2) * speed,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.08,
+    sides: 5 + Math.floor(Math.random() * 4),
+    color: colors[Math.floor(Math.random() * colors.length)],
+    drift: (Math.random() - 0.5) * 0.8,
+  });
+}
+
+// ── particles ──
+let particles = [];
+function burst(x, y, color, count = 12) {
+  for (let i = 0; i < count; i++) {
+    const ang = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+    const spd = 1.5 + Math.random() * 3;
+    particles.push({
+      x, y,
+      vx: Math.cos(ang) * spd,
+      vy: Math.sin(ang) * spd,
+      life: 1,
+      decay: 0.04 + Math.random() * 0.03,
+      r: 2 + Math.random() * 3,
+      color,
+    });
+  }
+}
+
+// ── stars (canvas) ──
+const stars = Array.from({ length: 60 }, () => ({
+  x: Math.random() * W,
+  y: Math.random() * H * 0.6,
+  r: Math.random() * 1.2,
+  alpha: 0.2 + Math.random() * 0.7,
+  twinkle: Math.random() * Math.PI * 2,
+}));
+
+// ── draw helpers ──
+function drawPolygon(cx, cy, r, sides, rot, color, glow) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rot);
+  ctx.beginPath();
+  for (let i = 0; i < sides; i++) {
+    const a = (Math.PI * 2 / sides) * i;
+    const jitter = r * (0.75 + Math.random() * 0.25);
+    if (i === 0) ctx.moveTo(Math.cos(a) * jitter, Math.sin(a) * jitter);
+    else          ctx.lineTo(Math.cos(a) * jitter, Math.sin(a) * jitter);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = glow || 8;
+  ctx.stroke();
+  ctx.fillStyle = color + '22';
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawShip(x, y, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x, y);
+
+  // engine glow
+  ctx.shadowColor = '#00ffff';
+  ctx.shadowBlur = 18;
+
+  // body
+  ctx.beginPath();
+  ctx.moveTo(0, -20);
+  ctx.lineTo(14, 16);
+  ctx.lineTo(6, 10);
+  ctx.lineTo(-6, 10);
+  ctx.lineTo(-14, 16);
+  ctx.closePath();
+  ctx.strokeStyle = '#00ffff';
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(0,255,255,0.08)';
+  ctx.fill();
+
+  // cockpit
+  ctx.beginPath();
+  ctx.moveTo(0, -10);
+  ctx.lineTo(5, 4);
+  ctx.lineTo(-5, 4);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,255,255,0.3)';
+  ctx.fill();
+
+  // engine flame
+  if (gameState === 'playing') {
+    const flicker = 0.7 + Math.random() * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(-5, 10);
+    ctx.lineTo(0, 10 + 14 * flicker);
+    ctx.lineTo(5, 10);
+    ctx.strokeStyle = '#ff6ec7';
+    ctx.shadowColor = '#ff6ec7';
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ── update ──
+function update() {
+  if (gameState !== 'playing') return;
+
+  frame++;
+
+  // score
+  score = Math.floor(frame / 6);
+  document.getElementById('scoreDisplay').textContent = score;
+
+  // difficulty
+  speed = 1 + frame / 800;
+  spawnRate = Math.max(20, 60 - frame / 60);
+
+  const sector = Math.min(9, Math.floor(frame / 480) + 1);
+  document.getElementById('levelDisplay').textContent = `SECTOR ${sector}`;
+
+  // spawn
+  if (frame - lastSpawn > spawnRate) {
+    spawnAsteroid();
+    lastSpawn = frame;
+    // bonus second asteroid at higher levels
+    if (speed > 2 && Math.random() < 0.4) spawnAsteroid();
+  }
+
+  // player movement
+  let moving = false;
+  if ((keys['ArrowLeft'] || keys['a'] || keys['A']) && player.x > player.w / 2 + 10) {
+    player.dx = -player.speed;
+    moving = true;
+  } else if ((keys['ArrowRight'] || keys['d'] || keys['D']) && player.x < W - player.w / 2 - 10) {
+    player.dx = player.speed;
+    moving = true;
+  } else {
+    player.dx *= 0.8;
+  }
+
+  // touch control
+  if (touchX !== null) {
+    const rect = canvas.getBoundingClientRect();
+    const tx = (touchX - rect.left) * (W / rect.width);
+    const diff = tx - player.x;
+    if (Math.abs(diff) > 5) {
+      player.dx = Math.sign(diff) * player.speed;
+      moving = true;
+    }
+  }
+
+  player.x = Math.max(player.w / 2 + 10, Math.min(W - player.w / 2 - 10, player.x + player.dx));
+
+  // trail
+  player.trail.unshift({ x: player.x, y: player.y });
+  if (player.trail.length > 10) player.trail.pop();
+
+  // invincibility countdown
+  if (player.invincible > 0) player.invincible--;
+
+  // asteroids
+  for (let i = asteroids.length - 1; i >= 0; i--) {
+    const a = asteroids[i];
+    a.y += a.speed;
+    a.x += a.drift;
+    a.rot += a.rotSpeed;
+
+    // off screen
+    if (a.y > H + a.r * 2) {
+      asteroids.splice(i, 1);
+      continue;
+    }
+
+    // collision (circle vs rect approximation)
+    if (player.invincible === 0) {
+      const dx = a.x - player.x;
+      const dy = a.y - player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < a.r + 14) {
+        burst(a.x, a.y, a.color, 16);
+        burst(player.x, player.y, '#00ffff', 10);
+        asteroids.splice(i, 1);
+        lives--;
+        updateLives();
+        player.invincible = 120;
+
+        if (lives <= 0) {
+          endGame();
+        }
+        continue;
+      }
+    }
+  }
+
+  // particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.95;
+    p.vy *= 0.95;
+    p.life -= p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+// ── draw ──
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // bg gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0a0015');
+  grad.addColorStop(1, '#050010');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // stars
+  stars.forEach(s => {
+    s.twinkle += 0.03;
+    const a = s.alpha * (0.7 + 0.3 * Math.sin(s.twinkle));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fill();
+  });
+
+  // horizon glow
+  const horizGrad = ctx.createLinearGradient(0, H * 0.55, 0, H * 0.75);
+  horizGrad.addColorStop(0, 'rgba(180,0,255,0.0)');
+  horizGrad.addColorStop(1, 'rgba(180,0,255,0.12)');
+  ctx.fillStyle = horizGrad;
+  ctx.fillRect(0, H * 0.55, W, H * 0.45);
+
+  if (gameState === 'idle') return;
+
+  // player trail
+  player.trail.forEach((t, i) => {
+    const a = (1 - i / player.trail.length) * 0.15;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, 4 - i * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,255,255,${a})`;
+    ctx.fill();
+  });
+
+  // asteroids
+  asteroids.forEach(a => {
+    drawPolygon(a.x, a.y, a.r, a.sides, a.rot, a.color, 12);
+  });
+
+  // particles
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // ship (flicker when invincible)
+  const shipAlpha = player.invincible > 0 ? (Math.floor(player.invincible / 6) % 2 === 0 ? 0.3 : 1) : 1;
+  drawShip(player.x, player.y, shipAlpha);
+
+  // speed lines (at high speed)
+  if (speed > 1.8) {
+    const intensity = Math.min(1, (speed - 1.8) / 1.5);
+    ctx.save();
+    ctx.globalAlpha = intensity * 0.15;
+    for (let i = 0; i < 8; i++) {
+      const lx = Math.random() * W;
+      const len = 20 + Math.random() * 60;
+      ctx.beginPath();
+      ctx.moveTo(lx, 0);
+      ctx.lineTo(lx, len);
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+// ── lives UI ──
+function updateLives() {
+  ['life1','life2','life3'].forEach((id, i) => {
+    document.getElementById(id).classList.toggle('lost', i >= lives);
+  });
+}
+
+// ── game flow ──
+function startGame() {
+  score = 0;
+  lives = 3;
+  frame = 0;
+  speed = 1;
+  lastSpawn = 0;
+  asteroids = [];
+  particles = [];
+  player.x = W / 2;
+  player.dx = 0;
+  player.invincible = 0;
+  player.trail = [];
+  updateLives();
+  document.getElementById('scoreDisplay').textContent = '0';
+  document.getElementById('levelDisplay').textContent = 'SECTOR 1';
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('gameOverScreen').classList.add('hidden');
+  gameState = 'playing';
+}
+
+function endGame() {
+  gameState = 'dead';
+  if (score > best) {
+    best = score;
+    localStorage.setItem('voidrunner_best', best);
+  }
+  document.getElementById('bestDisplay').textContent = best;
+  document.getElementById('finalScore').textContent = `SCORE: ${score}`;
+  document.getElementById('finalBest').textContent = score >= best ? '★ NEW BEST ★' : `BEST: ${best}`;
+  document.getElementById('gameOverScreen').classList.remove('hidden');
+}
+
+// ── loop ──
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ── init ──
+document.getElementById('bestDisplay').textContent = best;
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', startGame);
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') {
+    if (gameState === 'idle') startGame();
+    else if (gameState === 'dead') startGame();
+  }
+});
+
+loop();
+</script>
+</body>
+</html>
