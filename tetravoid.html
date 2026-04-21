@@ -153,6 +153,28 @@
       align-items:center;justify-content:center;background:rgba(0,0,15,.95);gap:.65rem;}
     .win-scores{display:flex;gap:1.5rem;margin:.2rem 0;}
     .win-score-col{text-align:center;display:flex;flex-direction:column;gap:.2rem;}
+    .main-menu-btn {
+    position: fixed;      /* stays on the page, not inside game */
+    top: 15px;
+    left: 15px;
+    padding: 8px 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: #ff66cc;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid #ff66cc;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 99999;       /* above everything */
+    transition: 0.2s ease;
+}
+
+.main-menu-btn:hover {
+    background: rgba(255,102,204,0.2);
+    box-shadow: 0 0 8px #ff66cc;
+}
+
   </style>
 </head>
 <body>
@@ -235,6 +257,7 @@
         </div>
       </div>
     </div>
+<button id="mainMenuBtn" class="main-menu-btn">OTHER GAMES</button>
 
     <!-- ══ 2P LAYOUT ══ -->
     <div id="layout2p" class="hidden">
@@ -824,6 +847,10 @@ document.getElementById('resume2p').onclick=togglePause;
 // initial blank board
 (()=>{const cv=document.getElementById('cv1p');const cx=cv.getContext('2d');
   cx.fillStyle='rgba(0,0,10,.95)';cx.fillRect(0,0,cv.width,cv.height);})();
+  document.getElementById("mainMenuBtn").addEventListener("click", () => {
+    window.location.href = "index.html";
+});
+
 </script>
 </body>
 </html>

@@ -32,6 +32,27 @@
       justify-content: center;
       animation: bloom-pulse 4s ease-in-out infinite;
     }
+.main-menu-btn {
+    position: fixed;      /* stays on the page, not inside game */
+    top: 15px;
+    left: 15px;
+    padding: 8px 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: #ff66cc;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid #ff66cc;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 99999;       /* above everything */
+    transition: 0.2s ease;
+}
+
+.main-menu-btn:hover {
+    background: rgba(255,102,204,0.2);
+    box-shadow: 0 0 8px #ff66cc;
+}
 
     @keyframes bloom-pulse {
       0%,100% { filter: drop-shadow(0 0 6px #00ffff55) drop-shadow(0 0 10px #ff00ff22); }
@@ -233,6 +254,8 @@
   </style>
 </head>
 <body>
+  <button id="mainMenuBtn" class="main-menu-btn">OTHER GAMES</button>
+
   <div class="stars"></div>
   <div class="sun">
     <div class="sun-stripe"></div>
@@ -330,6 +353,9 @@ const player = {
   invincible: 0,
   trail: [],
 };
+document.getElementById("mainMenuBtn").addEventListener("click", () => {
+    window.location.href = "index.html";
+});
 
 // ── input ──
 const keys = {};
