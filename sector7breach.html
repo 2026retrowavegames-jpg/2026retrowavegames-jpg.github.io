@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SECTOR 7 BREACH | RETROWAVE GAMES</title>
+<meta name="description" content="Sector 7 Breach — a tactical turn-based infiltration game. Command a 3-unit squad through an endless corporate megastructure. Free retrowave browser game."/>
+<meta name="keywords" content="tactical game, turn based, retrowave, browser game, free online, stealth, grid game"/>
+<meta name="robots" content="index, follow"/>
+<link rel="canonical" href="https://2026retrowavegames-jpg.github.io/sector7breach.html"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg:       #050a12;
+  --bg2:      #080f1a;
+  --cyan:     #00e5ff;
+  --cyan-dim: rgba(0,229,255,0.18);
+  --orange:   #ff6a00;
+  --red:      #ff2244;
+  --green:    #39ff6a;
+  --yellow:   #ffe600;
+  --purple:   #a259ff;
+  --white:    #cde8f5;
+  --dim:      rgba(180,220,255,0.3);
+  --grid-ln:  rgba(0,229,255,0.07);
+  --cell:     44px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* BG */
+.bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,40,80,0.5) 0%, transparent 70%),
+              linear-gradient(180deg, #020710 0%, #050a15 100%);
+}
+.bg-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(var(--grid-ln) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--grid-ln) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.bg-glow {
+  position: absolute; top: -10%; left: 50%;
+  transform: translateX(-50%);
+  width: 600px; height: 300px;
+  background: radial-gradient(ellipse, rgba(0,100,200,0.12) 0%, transparent 70%);
+}
+
+/* LAYOUT */
+.wrapper {
+  position: relative; z-index: 10;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 16px 40px;
+  display: flex; flex-direction: column; min-height: 100vh;
+}
+
+/* TOP */
+.top-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.btn-back {
+  font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none;
+  color: var(--orange); border: 2px solid var(--orange);
+  padding: 7px 13px; cursor: pointer; background: transparent; transition: all 0.2s;
+}
+.btn-back:hover { background: var(--orange); color: #000; box-shadow: 0 0 16px var(--orange); }
+
+.score-row { display: flex; gap: 22px; font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--dim); }
+.score-row b { color: var(--cyan); font-size: 14px; }
+
+/* TITLE */
+.game-title { text-align: center; margin-bottom: 10px; }
+.game-title h1 {
+  font-family: 'Orbitron', monospace; font-size: clamp(20px,4vw,36px); font-weight: 900;
+  letter-spacing: 0.1em; color: var(--cyan);
+  text-shadow: 0 0 24px var(--cyan), 0 0 60px rgba(0,229,255,0.3);
+}
+.game-title .sub {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--dim); letter-spacing: 0.3em; margin-top: 3px;
+}
+
+/* MAIN LAYOUT */
+.game-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  gap: 12px;
+  flex: 1;
+}
+
+/* PANELS */
+.side-panel {
+  background: rgba(5,15,28,0.9);
+  border: 1px solid rgba(0,229,255,0.15);
+  padding: 14px 12px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.panel-label {
+  font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 0.3em;
+  color: var(--dim); border-bottom: 1px solid rgba(0,229,255,0.1);
+  padding-bottom: 6px; text-transform: uppercase;
+}
+
+/* UNIT CARDS */
+.unit-card {
+  background: rgba(0,10,20,0.7);
+  border: 1px solid rgba(0,229,255,0.12);
+  padding: 10px 10px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.unit-card:hover { border-color: rgba(0,229,255,0.4); }
+.unit-card.selected { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,229,255,0.25); }
+.unit-card.dead { opacity: 0.35; pointer-events: none; }
+.unit-card.active-turn { border-color: var(--yellow); box-shadow: 0 0 8px rgba(255,230,0,0.3); }
+
+.unit-name {
+  font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--cyan); margin-bottom: 6px;
+}
+.unit-role { font-size: 11px; color: var(--dim); margin-bottom: 6px; }
+
+.bar-row { margin-bottom: 4px; }
+.bar-label { font-size: 9px; letter-spacing: 0.15em; color: var(--dim); margin-bottom: 2px; }
+.bar-track { height: 5px; background: rgba(255,255,255,0.06); border-radius: 1px; }
+.bar-fill { height: 100%; border-radius: 1px; transition: width 0.3s; }
+.bar-hp   { background: linear-gradient(90deg, #1a6b3a, var(--green)); }
+.bar-ap   { background: linear-gradient(90deg, #005580, var(--cyan)); }
+.bar-st   { background: linear-gradient(90deg, #6b3a00, var(--orange)); }
+
+.unit-ap-label {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  color: var(--cyan); margin-top: 4px;
+}
+
+/* AP BADGE */
+.ap-badge {
+  position: absolute; top: 8px; right: 8px;
+  font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700;
+  color: var(--yellow);
+}
+
+/* CENTER: MAP */
+.map-area {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.floor-info {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 0.15em;
+  color: var(--dim);
+}
+.floor-info .floor-num { font-size: 16px; font-weight: 900; color: var(--cyan); }
+.floor-info .floor-alarm { color: var(--red); animation: blink 0.7s infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+#mapCanvas {
+  display: block;
+  border: 1px solid rgba(0,229,255,0.2);
+  background: #020810;
+  box-shadow: 0 0 30px rgba(0,229,255,0.08), inset 0 0 40px rgba(0,0,0,0.5);
+  cursor: pointer;
+  image-rendering: pixelated;
+}
+
+/* LOG */
+.log-box {
+  background: rgba(2,8,16,0.9);
+  border: 1px solid rgba(0,229,255,0.1);
+  padding: 10px;
+  height: 120px;
+  overflow-y: auto;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.log-box::-webkit-scrollbar { width: 4px; }
+.log-box::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.2); }
+.log-entry { color: rgba(180,220,255,0.6); }
+.log-entry.good { color: var(--green); }
+.log-entry.bad  { color: var(--red); }
+.log-entry.info { color: var(--cyan); }
+.log-entry.hack { color: var(--purple); }
+.log-entry.warn { color: var(--yellow); }
+
+/* RIGHT PANEL: ACTIONS */
+.action-section { display: flex; flex-direction: column; gap: 6px; }
+.action-btn {
+  background: rgba(0,10,20,0.8);
+  border: 1px solid rgba(0,229,255,0.2);
+  color: var(--white);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px; font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 9px 10px;
+  cursor: pointer; text-align: left;
+  transition: all 0.15s;
+  position: relative;
+}
+.action-btn:hover:not(:disabled) { border-color: var(--cyan); background: rgba(0,229,255,0.07); }
+.action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.action-btn.selected-action { border-color: var(--yellow); background: rgba(255,230,0,0.08); color: var(--yellow); }
+.action-cost {
+  float: right;
+  font-family: 'Orbitron', monospace; font-size: 9px;
+  color: var(--cyan); font-weight: 400;
+}
+.action-desc { font-size: 10px; color: var(--dim); margin-top: 2px; display: block; }
+
+.btn-end-turn {
+  background: transparent;
+  border: 2px solid var(--orange);
+  color: var(--orange);
+  font-family: 'Orbitron', monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+  padding: 10px; cursor: pointer; text-transform: uppercase;
+  transition: all 0.2s; margin-top: 4px;
+}
+.btn-end-turn:hover { background: var(--orange); color: #000; box-shadow: 0 0 18px var(--orange); }
+
+/* INTEL / STATUS */
+.intel-block { font-size: 12px; line-height: 1.8; }
+.intel-row { display: flex; justify-content: space-between; }
+.intel-key { color: var(--dim); font-size: 11px; }
+.intel-val { color: var(--cyan); font-family: 'Share Tech Mono', monospace; font-size: 11px; }
+.intel-val.red { color: var(--red); }
+.intel-val.grn { color: var(--green); }
+.intel-val.ylw { color: var(--yellow); }
+
+/* SCREENS */
+.overlay-screen {
+  display: none; position: absolute; inset: 0; z-index: 50;
+  background: rgba(2,6,14,0.97);
+  align-items: center; justify-content: center; flex-direction: column;
+  text-align: center; padding: 40px;
+}
+.overlay-screen.active { display: flex; }
+
+.screen-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(28px,5vw,56px); font-weight: 900;
+  letter-spacing: 0.08em; margin-bottom: 16px;
+}
+.screen-title.cyan  { color: var(--cyan);   text-shadow: 0 0 30px var(--cyan); }
+.screen-title.red   { color: var(--red);    text-shadow: 0 0 30px var(--red); animation: blink 1.5s infinite; }
+.screen-title.green { color: var(--green);  text-shadow: 0 0 30px var(--green); }
+
+.screen-body {
+  font-family: 'Share Tech Mono', monospace; font-size: 15px;
+  line-height: 2; color: rgba(180,220,255,0.7);
+  max-width: 540px; margin-bottom: 30px;
+}
+.screen-body .hl  { color: var(--cyan); }
+.screen-body .hlr { color: var(--red); }
+.screen-body .hlg { color: var(--green); }
+.screen-body .hly { color: var(--yellow); }
+
+.screen-stats {
+  display: flex; gap: 40px; margin-bottom: 32px; flex-wrap: wrap; justify-content: center;
+}
+.stat-tile { text-align: center; }
+.stat-tile .val { font-family: 'Orbitron', monospace; font-size: 28px; font-weight: 900; color: var(--yellow); }
+.stat-tile .lbl { font-size: 10px; letter-spacing: 0.25em; color: var(--dim); margin-top: 2px; }
+
+.btn-primary {
+  font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.2em; padding: 13px 32px; cursor: pointer;
+  background: transparent; border: 2px solid var(--cyan); color: var(--cyan);
+  text-transform: uppercase; transition: all 0.2s; text-decoration: none; display: inline-block;
+}
+.btn-primary:hover { background: var(--cyan); color: #000; box-shadow: 0 0 24px var(--cyan); }
+.btn-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* TOOLTIP */
+#tooltip {
+  position: fixed; z-index: 200; pointer-events: none;
+  background: rgba(2,10,22,0.97); border: 1px solid rgba(0,229,255,0.35);
+  padding: 8px 12px; font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--white); max-width: 180px; line-height: 1.7; display: none;
+}
+
+/* FLASH */
+.flash { position: fixed; inset: 0; z-index: 300; pointer-events: none; opacity: 0; transition: opacity 0.08s; }
+.flash.red   { background: rgba(255,0,40,0.22); }
+.flash.green { background: rgba(0,255,100,0.14); }
+.flash.blue  { background: rgba(0,180,255,0.18); }
+.flash.show  { opacity: 1; }
+
+@media (max-width: 760px) {
+  .game-layout { grid-template-columns: 1fr; }
+  .side-panel { display: none; }
+  #mapCanvas { width: 100% !important; }
+}
+</style>
+</head>
+<body>
+<div class="bg"><div class="bg-grid"></div><div class="bg-glow"></div></div>
+<div class="flash" id="flash"></div>
+<div id="tooltip"></div>
+
+<!-- OVERLAY SCREENS -->
+<div class="overlay-screen active" id="scr-start">
+  <div class="screen-title cyan">SECTOR 7 BREACH</div>
+  <div class="screen-body">
+    You command <span class="hl">SQUAD KESTREL</span> — three operatives breaching the
+    <span class="hlr">VANTEC MEGASTRUCTURE</span>, floor by floor.<br><br>
+    Each operative has <span class="hly">2 Action Points</span> per turn.<br>
+    <span class="hl">MOVE</span> through corridors. <span class="hlr">ATTACK</span> guards in range.
+    <span class="hl">STEALTH</span> to bypass undetected. <span class="hlg">HACK</span> terminals to gain intel.<br><br>
+    Reach the <span class="hly">EXIT</span> with at least one operative alive. Go deeper. Get richer.
+    <span class="hlr">Don't die.</span>
+  </div>
+  <div class="btn-row">
+    <button class="btn-primary" onclick="initGame()">▶ &nbsp; BEGIN INFILTRATION</button>
+    <a href="index.html" class="btn-primary" style="border-color:var(--orange);color:var(--orange)">◀ HANGAR</a>
+  </div>
+</div>
+
+<div class="overlay-screen" id="scr-dead">
+  <div class="screen-title red">SQUAD ELIMINATED</div>
+  <div class="screen-body" id="dead-msg">All operatives have been neutralised.</div>
+  <div class="screen-stats" id="dead-stats"></div>
+  <div class="btn-row">
+    <button class="btn-primary" style="border-color:var(--red);color:var(--red)" onclick="initGame()">▶ &nbsp; REDEPLOY</button>
+    <a href="index.html" class="btn-primary" style="border-color:var(--orange);color:var(--orange)">◀ HANGAR</a>
+  </div>
+</div>
+
+<div class="overlay-screen" id="scr-floor-clear">
+  <div class="screen-title green">FLOOR CLEARED</div>
+  <div class="screen-body" id="floor-clear-msg"></div>
+  <div class="screen-stats" id="floor-clear-stats"></div>
+  <button class="btn-primary" onclick="nextFloor()">▶ &nbsp; DESCEND TO NEXT FLOOR</button>
+</div>
+
+<!-- MAIN GAME UI -->
+<div class="wrapper" id="game-ui" style="display:none;">
+  <div class="top-bar">
+    <a href="index.html" class="btn-back">◀ Other Games</a>
+    <div class="score-row">
+      FLOOR <b id="sc-floor">1</b>
+      KILLS <b id="sc-kills">0</b>
+      HACKS <b id="sc-hacks">0</b>
+      SCORE <b id="sc-score">0</b>
+    </div>
+  </div>
+
+  <div class="game-title">
+    <h1>SECTOR 7 BREACH</h1>
+    <div class="sub">· tactical infiltration · squad kestrel ·</div>
+  </div>
+
+  <div class="game-layout">
+
+    <!-- LEFT: SQUAD -->
+    <div class="side-panel">
+      <div class="panel-label">· Squad Kestrel ·</div>
+      <div id="unit-cards"></div>
+    </div>
+
+    <!-- CENTER: MAP + LOG -->
+    <div class="map-area">
+      <div class="floor-info">
+        <span>FLOOR <span class="floor-num" id="hud-floor">1</span></span>
+        <span id="hud-enemies">HOSTILES: 0</span>
+        <span id="hud-alarm" style="display:none" class="floor-alarm">⚠ ALARM ACTIVE</span>
+        <span id="hud-turn">SQUAD TURN</span>
+      </div>
+      <canvas id="mapCanvas" width="484" height="484"></canvas>
+      <div class="log-box" id="logBox"></div>
+    </div>
+
+    <!-- RIGHT: ACTIONS + INTEL -->
+    <div class="side-panel">
+      <div class="panel-label">· Actions ·</div>
+      <div class="action-section" id="action-btns"></div>
+
+      <div class="panel-label" style="margin-top:4px;">· Intel ·</div>
+      <div class="intel-block" id="intel-block">
+        <div class="intel-row"><span class="intel-key">SELECTED</span><span class="intel-val" id="intel-unit">—</span></div>
+        <div class="intel-row"><span class="intel-key">HP</span><span class="intel-val" id="intel-hp">—</span></div>
+        <div class="intel-row"><span class="intel-key">AP</span><span class="intel-val" id="intel-ap">—</span></div>
+        <div class="intel-row"><span class="intel-key">STEALTH</span><span class="intel-val" id="intel-st">—</span></div>
+        <div class="intel-row"><span class="intel-key">ACTION</span><span class="intel-val" id="intel-action">MOVE</span></div>
+        <div class="intel-row"><span class="intel-key">TURN</span><span class="intel-val" id="intel-turn">—</span></div>
+        <div class="intel-row"><span class="intel-key">ALARM</span><span class="intel-val" id="intel-alarm">OFF</span></div>
+      </div>
+
+      <button class="btn-end-turn" id="btn-end" onclick="endPlayerTurn()">END TURN ▶</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SECTOR 7 BREACH — TACTICAL ENGINE
+// ============================================================
+
+// CONSTANTS
+const COLS = 11, ROWS = 11;
+const CS = 44; // cell size px
+const T = {
+  WALL: 0, FLOOR: 1, EXIT: 2, TERMINAL: 3, COVER: 4, DOOR: 5
+};
+
+// UNIT DEFINITIONS
+const UNIT_DEFS = [
+  { id: 'vex',    name: 'VEX',    role: 'Assault',  color: '#00e5ff', hp: 12, maxHp: 12, ap: 2, maxAp: 2, atk: 3, range: 1, stealth: 40, special: 'BREACH' },
+  { id: 'sable',  name: 'SABLE',  role: 'Ghost',    color: '#a259ff', hp: 8,  maxHp: 8,  ap: 2, maxAp: 2, atk: 2, range: 1, stealth: 80, special: 'VANISH' },
+  { id: 'patch',  name: 'PATCH',  role: 'Hacker',   color: '#39ff6a', hp: 9,  maxHp: 9,  ap: 2, maxAp: 2, atk: 1, range: 2, stealth: 55, special: 'OVERCLOCK' },
+];
+
+// ENEMY DEFS
+const ENEMY_DEFS = [
+  { type: 'GUARD',    glyph: 'G', color: '#ff2244', hp: 5,  atk: 2, range: 3, ap: 1, vision: 4 },
+  { type: 'DRONE',    glyph: 'D', color: '#ff9900', hp: 3,  atk: 1, range: 2, ap: 2, vision: 5 },
+  { type: 'HEAVY',    glyph: 'H', color: '#ff4466', hp: 10, atk: 3, range: 2, ap: 1, vision: 3 },
+  { type: 'SNIPER',   glyph: 'S', color: '#ff6600', hp: 4,  atk: 4, range: 5, ap: 1, vision: 6 },
+];
+
+// GAME STATE
+let G = {};
+let bestScore = 0;
+try { bestScore = parseInt(localStorage.getItem('s7_best') || '0'); } catch(e){}
+
+// ---- INIT ----
+function initGame() {
+  G = {
+    floor: 1,
+    score: 0,
+    kills: 0,
+    hacks: 0,
+    alarm: false,
+    alarmTimer: 0,
+    turn: 'player',
+    turnNum: 1,
+    selectedUnit: 0,
+    selectedAction: 'move',
+    units: UNIT_DEFS.map(d => ({...d, x:0, y:0, alive: true, stealthed: false, cooldowns:{}})),
+    enemies: [],
+    map: [],
+    exits: [],
+    terminals: [],
+    phase: 'player',
+    animating: false,
+  };
+  hideAllScreens();
+  document.getElementById('game-ui').style.display = 'flex';
+  document.getElementById('game-ui').style.flexDirection = 'column';
+  generateFloor();
+  renderAll();
+  log('Squad Kestrel deployed to Floor 1.', 'info');
+  log('Locate and reach the EXIT. Eliminate or avoid hostiles.', 'info');
+}
+
+function hideAllScreens() {
+  document.querySelectorAll('.overlay-screen').forEach(s => s.classList.remove('active'));
+}
+
+// ---- MAP GENERATION ----
+function generateFloor() {
+  const floor = G.floor;
+  const map = Array.from({length: ROWS}, () => Array(COLS).fill(T.WALL));
+
+  // Carve rooms using BSP-lite
+  const rooms = [];
+  carveRoom(map, rooms, 1, 1, COLS-2, ROWS-2, 0);
+
+  // Connect rooms with corridors
+  for (let i = 1; i < rooms.length; i++) {
+    const a = roomCenter(rooms[i-1]);
+    const b = roomCenter(rooms[i]);
+    carveCorridor(map, a, b);
+  }
+
+  // Add cover objects
+  let coverCount = 4 + Math.floor(floor * 0.5);
+  for (let c = 0; c < coverCount; c++) {
+    const cell = randomFloorCell(map);
+    if (cell) map[cell.y][cell.x] = T.COVER;
+  }
+
+  // Add terminals
+  let termCount = 1 + Math.floor(floor / 3);
+  const terminals = [];
+  for (let t = 0; t < termCount; t++) {
+    const cell = randomFloorCell(map);
+    if (cell) { map[cell.y][cell.x] = T.TERMINAL; terminals.push({...cell, hacked: false}); }
+  }
+
+  // Add doors on some corridors
+  addDoors(map);
+
+  // Place EXIT in the last room
+  const lastRoom = rooms[rooms.length - 1];
+  const ec = roomCenter(lastRoom);
+  map[ec.y][ec.x] = T.EXIT;
+
+  G.map = map;
+  G.rooms = rooms;
+  G.terminals = terminals;
+
+  // Place squad in first room
+  const startRoom = rooms[0];
+  const startPositions = [
+    {x: startRoom.x+1, y: startRoom.y+1},
+    {x: startRoom.x+2, y: startRoom.y+1},
+    {x: startRoom.x+1, y: startRoom.y+2},
+  ];
+  G.units.forEach((u, i) => {
+    if (!u.alive) return;
+    const p = startPositions[i] || roomCenter(startRoom);
+    u.x = p.x; u.y = p.y;
+  });
+
+  // Place enemies — scale with floor
+  const enemyCount = 2 + Math.floor(floor * 1.2);
+  G.enemies = [];
+  for (let e = 0; e < enemyCount; e++) {
+    const cell = randomFloorCellAway(map, startRoom);
+    if (!cell) continue;
+    let def;
+    if (floor < 3) def = ENEMY_DEFS[Math.random() < 0.7 ? 0 : 1];
+    else if (floor < 6) def = ENEMY_DEFS[Math.floor(Math.random() * 3)];
+    else def = ENEMY_DEFS[Math.floor(Math.random() * 4)];
+    G.enemies.push({
+      ...def,
+      maxHp: def.hp,
+      hp: def.hp,
+      x: cell.x, y: cell.y,
+      alive: true,
+      ap: def.ap,
+      maxAp: def.ap,
+      alerted: false,
+      id: e,
+    });
+  }
+
+  // Reset AP and stealth for all alive units
+  G.units.forEach(u => { if(u.alive) { u.ap = u.maxAp; u.stealthed = false; u.cooldowns = {}; } });
+  G.alarm = false;
+  G.alarmTimer = 0;
+  G.turn = 'player';
+  G.selectedUnit = G.units.findIndex(u => u.alive);
+  G.selectedAction = 'move';
+}
+
+function carveRoom(map, rooms, x1, y1, x2, y2, depth) {
+  const w = x2 - x1, h = y2 - y1;
+  if (w < 4 || h < 4 || depth > 3) {
+    // Leaf room
+    const rw = Math.max(3, Math.min(w, 3 + Math.floor(Math.random()*3)));
+    const rh = Math.max(3, Math.min(h, 3 + Math.floor(Math.random()*3)));
+    const rx = x1 + Math.floor(Math.random() * Math.max(1, w - rw));
+    const ry = y1 + Math.floor(Math.random() * Math.max(1, h - rh));
+    for (let y = ry; y < ry+rh && y < ROWS-1; y++)
+      for (let x = rx; x < rx+rw && x < COLS-1; x++)
+        map[y][x] = T.FLOOR;
+    rooms.push({x: rx, y: ry, w: rw, h: rh});
+    return;
+  }
+  const splitH = w > h;
+  if (splitH) {
+    const mid = x1 + 2 + Math.floor(Math.random() * (w - 4));
+    carveRoom(map, rooms, x1, y1, mid, y2, depth+1);
+    carveRoom(map, rooms, mid+1, y1, x2, y2, depth+1);
+  } else {
+    const mid = y1 + 2 + Math.floor(Math.random() * (h - 4));
+    carveRoom(map, rooms, x1, y1, x2, mid, depth+1);
+    carveRoom(map, rooms, x1, mid+1, x2, y2, depth+1);
+  }
+}
+
+function carveCorridor(map, a, b) {
+  let x = a.x, y = a.y;
+  while (x !== b.x) {
+    if (map[y][x] === T.WALL) map[y][x] = T.FLOOR;
+    x += x < b.x ? 1 : -1;
+  }
+  while (y !== b.y) {
+    if (map[y][x] === T.WALL) map[y][x] = T.FLOOR;
+    y += y < b.y ? 1 : -1;
+  }
+}
+
+function addDoors(map) {
+  // Randomly replace some floor cells adjacent to walls with doors
+  for (let y = 1; y < ROWS-1; y++) {
+    for (let x = 1; x < COLS-1; x++) {
+      if (map[y][x] === T.FLOOR && Math.random() < 0.04) {
+        const adj = [{x:x-1,y},{x:x+1,y},{x,y:y-1},{x,y:y+1}];
+        const walls = adj.filter(p => map[p.y]?.[p.x] === T.WALL).length;
+        if (walls >= 2) map[y][x] = T.DOOR;
+      }
+    }
+  }
+}
+
+function roomCenter(r) { return {x: Math.floor(r.x + r.w/2), y: Math.floor(r.y + r.h/2)}; }
+
+function randomFloorCell(map) {
+  for (let tries = 0; tries < 200; tries++) {
+    const x = 1 + Math.floor(Math.random()*(COLS-2));
+    const y = 1 + Math.floor(Math.random()*(ROWS-2));
+    if (map[y][x] === T.FLOOR && !unitAt(x,y) && !enemyAt(x,y)) return {x,y};
+  }
+  return null;
+}
+
+function randomFloorCellAway(map, avoidRoom) {
+  for (let tries = 0; tries < 300; tries++) {
+    const x = 1 + Math.floor(Math.random()*(COLS-2));
+    const y = 1 + Math.floor(Math.random()*(ROWS-2));
+    if (map[y][x] !== T.FLOOR) continue;
+    if (unitAt(x,y) || enemyAt(x,y)) continue;
+    if (x >= avoidRoom.x-1 && x <= avoidRoom.x+avoidRoom.w+1 &&
+        y >= avoidRoom.y-1 && y <= avoidRoom.y+avoidRoom.h+1) continue;
+    return {x,y};
+  }
+  return null;
+}
+
+// ---- QUERIES ----
+function unitAt(x, y) { return G.units.find(u => u.alive && u.x===x && u.y===y); }
+function enemyAt(x, y) { return G.enemies.find(e => e.alive && e.x===x && e.y===y); }
+function isWalkable(x, y, forEnemy=false) {
+  if (x<0||x>=COLS||y<0||y>=ROWS) return false;
+  const t = G.map[y][x];
+  if (t === T.WALL) return false;
+  if (unitAt(x,y) && !forEnemy) return false;
+  if (enemyAt(x,y)) return false;
+  return true;
+}
+function dist(a, b) { return Math.abs(a.x-b.x) + Math.abs(a.y-b.y); }
+
+// ---- BFS PATHFINDING ----
+function bfs(sx, sy, tx, ty, forEnemy=false) {
+  const key = (x,y) => y*COLS+x;
+  const visited = new Set([key(sx,sy)]);
+  const queue = [{x:sx, y:sy, path:[]}];
+  while (queue.length) {
+    const {x,y,path} = queue.shift();
+    for (const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+      const nx=x+dx, ny=y+dy;
+      if (nx===tx && ny===ty) return [...path, {x:nx,y:ny}];
+      if (!visited.has(key(nx,ny)) && isWalkable(nx,ny,forEnemy)) {
+        visited.add(key(nx,ny));
+        queue.push({x:nx,y:ny,path:[...path,{x:nx,y:ny}]});
+      }
+    }
+  }
+  return [];
+}
+
+// ---- RENDER ----
+const CELL_COLORS = {
+  [T.WALL]:     '#0a0f18',
+  [T.FLOOR]:    '#0d1520',
+  [T.EXIT]:     '#001a00',
+  [T.TERMINAL]: '#001520',
+  [T.COVER]:    '#1a1400',
+  [T.DOOR]:     '#150a00',
+};
+
+function renderAll() {
+  const canvas = document.getElementById('mapCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0, canvas.width, canvas.height);
+
+  // Tiles
+  for (let y=0; y<ROWS; y++) {
+    for (let x=0; x<COLS; x++) {
+      const t = G.map[y][x];
+      ctx.fillStyle = CELL_COLORS[t] || '#000';
+      ctx.fillRect(x*CS, y*CS, CS, CS);
+
+      // Grid lines on floor
+      if (t !== T.WALL) {
+        ctx.strokeStyle = 'rgba(0,229,255,0.05)';
+        ctx.strokeRect(x*CS+0.5, y*CS+0.5, CS-1, CS-1);
+      }
+
+      // Special tiles
+      if (t === T.EXIT) {
+        ctx.strokeStyle = '#39ff6a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x*CS+3, y*CS+3, CS-6, CS-6);
+        ctx.fillStyle = 'rgba(57,255,106,0.15)';
+        ctx.fillRect(x*CS+3, y*CS+3, CS-6, CS-6);
+        ctx.fillStyle = '#39ff6a';
+        ctx.font = 'bold 18px Orbitron, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('E', x*CS+CS/2, y*CS+CS/2);
+        ctx.lineWidth = 1;
+      }
+      if (t === T.TERMINAL) {
+        const term = G.terminals.find(tt => tt.x===x && tt.y===y);
+        const hacked = term && term.hacked;
+        ctx.fillStyle = hacked ? 'rgba(57,255,106,0.3)' : 'rgba(0,229,255,0.15)';
+        ctx.fillRect(x*CS+4, y*CS+4, CS-8, CS-8);
+        ctx.fillStyle = hacked ? '#39ff6a' : '#00e5ff';
+        ctx.font = '14px Share Tech Mono, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(hacked ? '✓' : 'T', x*CS+CS/2, y*CS+CS/2);
+      }
+      if (t === T.COVER) {
+        ctx.fillStyle = 'rgba(255,230,0,0.12)';
+        ctx.fillRect(x*CS+5, y*CS+5, CS-10, CS-10);
+        ctx.strokeStyle = 'rgba(255,230,0,0.4)';
+        ctx.strokeRect(x*CS+5, y*CS+5, CS-10, CS-10);
+      }
+      if (t === T.DOOR) {
+        ctx.fillStyle = 'rgba(255,106,0,0.2)';
+        ctx.fillRect(x*CS+2, y*CS+2, CS-4, CS-4);
+        ctx.strokeStyle = 'rgba(255,106,0,0.5)';
+        ctx.strokeRect(x*CS+2, y*CS+2, CS-4, CS-4);
+      }
+    }
+  }
+
+  // Move/attack highlights for selected unit
+  const selUnit = G.units[G.selectedUnit];
+  if (selUnit && selUnit.alive && G.turn === 'player') {
+    highlightReachable(ctx, selUnit);
+  }
+
+  // Enemies
+  G.enemies.forEach(e => {
+    if (!e.alive) return;
+    // Vision cone (faint)
+    ctx.fillStyle = e.alerted
+      ? 'rgba(255,34,68,0.06)'
+      : 'rgba(255,153,0,0.04)';
+    for (let dy=-e.vision; dy<=e.vision; dy++) {
+      for (let dx=-e.vision; dx<=e.vision; dx++) {
+        if (Math.abs(dx)+Math.abs(dy) <= e.vision) {
+          const vx=e.x+dx, vy=e.y+dy;
+          if (vx>=0&&vx<COLS&&vy>=0&&vy<ROWS&&G.map[vy][vx]!==T.WALL) {
+            ctx.fillRect(vx*CS, vy*CS, CS, CS);
+          }
+        }
+      }
+    }
+
+    // Enemy body
+    ctx.fillStyle = e.alerted ? '#ff2244' : e.color;
+    ctx.beginPath();
+    ctx.arc(e.x*CS+CS/2, e.y*CS+CS/2, CS/2-5, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 13px Orbitron, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(e.glyph, e.x*CS+CS/2, e.y*CS+CS/2);
+
+    // HP bar
+    const hpPct = e.hp / e.maxHp;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(e.x*CS+3, e.y*CS+CS-7, CS-6, 4);
+    ctx.fillStyle = hpPct>0.5 ? '#39ff6a' : hpPct>0.25 ? '#ffe600' : '#ff2244';
+    ctx.fillRect(e.x*CS+3, e.y*CS+CS-7, Math.round((CS-6)*hpPct), 4);
+  });
+
+  // Units
+  G.units.forEach((u, i) => {
+    if (!u.alive) return;
+    const isSel = i === G.selectedUnit && G.turn === 'player';
+    const isActive = G.turn === 'player' && u.ap > 0;
+
+    // Stealth shimmer
+    if (u.stealthed) {
+      ctx.fillStyle = 'rgba(162,89,255,0.15)';
+      ctx.fillRect(u.x*CS, u.y*CS, CS, CS);
+    }
+
+    // Selection ring
+    if (isSel) {
+      ctx.strokeStyle = '#ffe600';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(u.x*CS+CS/2, u.y*CS+CS/2, CS/2-2, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    // Unit circle
+    ctx.fillStyle = u.stealthed ? 'rgba(162,89,255,0.7)' : (isActive ? u.color : 'rgba(100,100,120,0.8)');
+    ctx.beginPath();
+    ctx.arc(u.x*CS+CS/2, u.y*CS+CS/2, CS/2-6, 0, Math.PI*2);
+    ctx.fill();
+
+    // Glyph
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 11px Orbitron, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(u.name[0], u.x*CS+CS/2, u.y*CS+CS/2);
+
+    // AP dots
+    for (let a=0; a<u.maxAp; a++) {
+      ctx.fillStyle = a < u.ap ? '#ffe600' : 'rgba(255,255,255,0.15)';
+      ctx.beginPath();
+      ctx.arc(u.x*CS+8+a*10, u.y*CS+4, 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+  });
+
+  updateUnitCards();
+  updateIntel();
+  updateScoreBar();
+}
+
+function highlightReachable(ctx, unit) {
+  const action = G.selectedAction;
+  const color = action==='attack' ? 'rgba(255,34,68,0.18)' :
+                action==='hack'   ? 'rgba(162,89,255,0.2)'  :
+                action==='stealth'? 'rgba(162,89,255,0.12)' :
+                'rgba(0,229,255,0.10)';
+  const range = action==='attack' ? unit.range :
+                action==='hack'   ? 2 : 2;
+
+  for (let dy=-range; dy<=range; dy++) {
+    for (let dx=-range; dx<=range; dx++) {
+      if (Math.abs(dx)+Math.abs(dy) > range) continue;
+      const tx=unit.x+dx, ty=unit.y+dy;
+      if (tx<0||tx>=COLS||ty<0||ty>=ROWS) continue;
+      if (G.map[ty][tx] === T.WALL) continue;
+      ctx.fillStyle = color;
+      ctx.fillRect(tx*CS+1, ty*CS+1, CS-2, CS-2);
+    }
+  }
+}
+
+// ---- CANVAS CLICK ----
+document.getElementById('mapCanvas').addEventListener('click', function(e) {
+  if (G.turn !== 'player' || G.animating) return;
+  const rect = this.getBoundingClientRect();
+  const scaleX = COLS * CS / rect.width;
+  const scaleY = ROWS * CS / rect.height;
+  const cx = Math.floor((e.clientX - rect.left) * scaleX / CS);
+  const cy = Math.floor((e.clientY - rect.top)  * scaleY / CS);
+  handleCellClick(cx, cy);
+});
+
+document.getElementById('mapCanvas').addEventListener('mousemove', function(e) {
+  const rect = this.getBoundingClientRect();
+  const scaleX = COLS * CS / rect.width;
+  const scaleY = ROWS * CS / rect.height;
+  const cx = Math.floor((e.clientX - rect.left) * scaleX / CS);
+  const cy = Math.floor((e.clientY - rect.top)  * scaleY / CS);
+  showTooltip(e.clientX+12, e.clientY+12, cx, cy);
+});
+document.getElementById('mapCanvas').addEventListener('mouseleave', () => {
+  document.getElementById('tooltip').style.display = 'none';
+});
+
+function showTooltip(mx, my, cx, cy) {
+  const tt = document.getElementById('tooltip');
+  const enemy = G.enemies.find(e => e.alive && e.x===cx && e.y===cy);
+  const unit = G.units.find(u => u.alive && u.x===cx && u.y===cy);
+  const term = G.terminals.find(t => t.x===cx && t.y===cy);
+  const tile = G.map[cy]?.[cx];
+
+  let html = '';
+  if (enemy) {
+    html = `<b style="color:${enemy.color}">${enemy.type}</b><br>HP: ${enemy.hp}/${enemy.maxHp}<br>ATK: ${enemy.atk} | RNG: ${enemy.range}<br>${enemy.alerted ? '<span style="color:#ff2244">ALERTED</span>' : 'Patrol mode'}`;
+  } else if (unit) {
+    html = `<b style="color:${unit.color}">${unit.name}</b> (${unit.role})<br>HP: ${unit.hp}/${unit.maxHp}<br>AP: ${unit.ap}/${unit.maxAp}<br>STEALTH: ${unit.stealth}%`;
+  } else if (tile === T.EXIT) {
+    html = `<span style="color:#39ff6a">EXIT</span><br>Move all alive units here<br>to clear the floor.`;
+  } else if (tile === T.TERMINAL) {
+    html = `<span style="color:#00e5ff">TERMINAL</span><br>${term?.hacked ? 'Already hacked.' : 'Adjacent: HACK to access.'}`;
+  } else if (tile === T.COVER) {
+    html = `<span style="color:#ffe600">COVER</span><br>Reduces incoming damage<br>by 1 while occupied.`;
+  } else {
+    tt.style.display = 'none'; return;
+  }
+  tt.innerHTML = html;
+  tt.style.display = 'block';
+  tt.style.left = mx + 'px';
+  tt.style.top = my + 'px';
+}
+
+function handleCellClick(cx, cy) {
+  const selUnit = G.units[G.selectedUnit];
+  if (!selUnit || !selUnit.alive) return;
+
+  // Click on own unit — select it
+  const clickedUnit = G.units.findIndex(u => u.alive && u.x===cx && u.y===cy);
+  if (clickedUnit >= 0 && clickedUnit !== G.selectedUnit) {
+    G.selectedUnit = clickedUnit;
+    G.selectedAction = 'move';
+    renderAll();
+    return;
+  }
+
+  const action = G.selectedAction;
+
+  if (action === 'move') doMove(selUnit, cx, cy);
+  else if (action === 'attack') doAttack(selUnit, cx, cy);
+  else if (action === 'stealth') doStealth(selUnit, cx, cy);
+  else if (action === 'hack') doHack(selUnit, cx, cy);
+  else if (action === 'special') doSpecial(selUnit, cx, cy);
+}
+
+// ---- ACTIONS ----
+function doMove(unit, tx, ty) {
+  if (unit.ap < 1) { log('No AP remaining.', 'warn'); return; }
+  if (!isWalkable(tx, ty)) return;
+
+  const path = bfs(unit.x, unit.y, tx, ty);
+  if (path.length === 0) { log('No path to target.', 'warn'); return; }
+  if (path.length > 3) { log('Too far — move range is 3 tiles per AP.', 'warn'); return; }
+
+  unit.x = tx; unit.y = ty;
+  unit.ap--;
+
+  // Check exit
+  if (G.map[ty][tx] === T.EXIT) {
+    checkFloorClear();
+    return;
+  }
+
+  // Trigger alarm if enemy can see and not stealthed
+  if (!unit.stealthed) triggerEnemySight(unit);
+
+  log(`${unit.name} moved to (${tx},${ty}).`);
+  G.selectedAction = 'move';
+  renderAll();
+  checkTurnEnd();
+}
+
+function doAttack(unit, tx, ty) {
+  if (unit.ap < 1) { log('No AP remaining.', 'warn'); return; }
+  const enemy = G.enemies.find(e => e.alive && e.x===tx && e.y===ty);
+  if (!enemy) { log('No hostile at that position.', 'warn'); return; }
+  if (dist(unit, enemy) > unit.range) { log('Target out of range.', 'warn'); return; }
+
+  const inCover = G.map[unit.y][unit.x] === T.COVER;
+  let dmg = unit.atk + (inCover ? 1 : 0) + Math.floor(Math.random() * 2);
+  if (unit.stealthed) { dmg += 2; unit.stealthed = false; log(`${unit.name} ambush attack! +2 bonus.`, 'good'); }
+
+  enemy.hp -= dmg;
+  enemy.alerted = true;
+  unit.ap--;
+  G.alarm = true;
+
+  if (enemy.hp <= 0) {
+    enemy.alive = false;
+    G.kills++;
+    G.score += 50 * G.floor;
+    log(`${unit.name} eliminated ${enemy.type} for ${dmg} dmg. KILL +${50*G.floor}pts`, 'good');
+    flash('green');
+  } else {
+    log(`${unit.name} hit ${enemy.type} for ${dmg} dmg. (${enemy.hp}/${enemy.maxHp} HP)`, 'good');
+    flash('blue');
+  }
+
+  G.selectedAction = 'attack';
+  renderAll();
+  checkTurnEnd();
+}
+
+function doStealth(unit, tx, ty) {
+  if (unit.ap < 1) { log('No AP remaining.', 'warn'); return; }
+  if (tx !== unit.x || ty !== unit.y) { log('Stealth: click your own unit.', 'warn'); return; }
+
+  const roll = Math.random() * 100;
+  if (roll < unit.stealth) {
+    unit.stealthed = true;
+    unit.ap--;
+    log(`${unit.name} entered STEALTH mode (${unit.stealth}% chance). Next attack: bonus dmg.`, 'hack');
+    flash('blue');
+  } else {
+    unit.ap--;
+    log(`${unit.name} failed stealth attempt. Stealth chance: ${unit.stealth}%.`, 'bad');
+  }
+  G.selectedAction = 'move';
+  renderAll();
+  checkTurnEnd();
+}
+
+function doHack(unit, tx, ty) {
+  if (unit.ap < 1) { log('No AP remaining.', 'warn'); return; }
+  const term = G.terminals.find(t => t.x===tx && t.y===ty);
+  if (!term) { log('No terminal at that position.', 'warn'); return; }
+  if (term.hacked) { log('Terminal already accessed.', 'warn'); return; }
+  if (dist(unit, term) > 1) { log('Must be adjacent to terminal.', 'warn'); return; }
+
+  const hackChance = unit.role === 'Hacker' ? 90 : 55;
+  const roll = Math.random() * 100;
+  unit.ap--;
+
+  if (roll < hackChance) {
+    term.hacked = true;
+    G.hacks++;
+    G.score += 75 * G.floor;
+    // Random hack reward
+    const rewards = [
+      () => { G.alarm = false; G.enemies.forEach(e => e.alerted = false); log('HACK: Alarm system DISABLED. Enemy alert cleared.', 'hack'); },
+      () => { const dmg = 3; G.enemies.filter(e=>e.alive).forEach(e => { e.hp -= dmg; if(e.hp<=0){e.alive=false;G.kills++;} }); log(`HACK: System overload — all enemies take ${dmg} damage.`, 'hack'); },
+      () => { G.units.filter(u=>u.alive).forEach(u => u.ap = Math.min(u.maxAp, u.ap+1)); log('HACK: Power reroute — all operatives gain +1 AP.', 'hack'); },
+      () => { const heal = 3; G.units.filter(u=>u.alive).forEach(u => u.hp = Math.min(u.maxHp, u.hp+heal)); log(`HACK: Medical systems — all operatives healed for ${heal} HP.`, 'hack'); },
+      () => { log('HACK: Enemy patrol routes leaked. Vision ranges reduced this turn.', 'hack'); G.enemies.forEach(e => e.vision = Math.max(1, e.vision-2)); },
+    ];
+    rewards[Math.floor(Math.random()*rewards.length)]();
+    flash('blue');
+  } else {
+    log(`${unit.name} failed hack attempt. Alarm triggered!`, 'bad');
+    G.alarm = true;
+    G.enemies.forEach(e => e.alerted = true);
+    flash('red');
+  }
+  G.selectedAction = 'move';
+  renderAll();
+  checkTurnEnd();
+}
+
+function doSpecial(unit, tx, ty) {
+  if (unit.ap < 2) { log('Special requires 2 AP.', 'warn'); return; }
+
+  if (unit.special === 'BREACH') {
+    // Vex: deal heavy damage in melee
+    const enemy = G.enemies.find(e => e.alive && e.x===tx && e.y===ty);
+    if (!enemy) { log('BREACH: No target.', 'warn'); return; }
+    if (dist(unit, enemy) > 1) { log('BREACH: Must be adjacent.', 'warn'); return; }
+    const dmg = unit.atk * 2 + 3;
+    enemy.hp -= dmg;
+    enemy.alerted = true; G.alarm = true;
+    unit.ap -= 2;
+    if (enemy.hp <= 0) { enemy.alive = false; G.kills++; G.score += 80*G.floor; log(`VEX BREACH: ${dmg} dmg — ${enemy.type} ELIMINATED!`, 'good'); flash('green'); }
+    else log(`VEX BREACH: ${dmg} dmg on ${enemy.type}. (${enemy.hp}HP left)`, 'good');
+
+  } else if (unit.special === 'VANISH') {
+    // Sable: guaranteed stealth + move one tile
+    unit.stealthed = true;
+    unit.ap -= 2;
+    log(`SABLE VANISH: Guaranteed stealth + next hit deals +3 bonus damage.`, 'hack');
+    unit.atk_bonus = 3;
+    flash('blue');
+
+  } else if (unit.special === 'OVERCLOCK') {
+    // Patch: hack from range 3 this turn, +1 AP to adjacent allies
+    G.units.forEach((u,i) => {
+      if(u.alive && i !== G.selectedUnit && dist(unit,u)<=2) { u.ap = Math.min(u.maxAp+1, u.ap+1); }
+    });
+    unit.ap -= 2;
+    log(`PATCH OVERCLOCK: Adjacent allies gain +1 AP. Remote hack range increased to 3.`, 'hack');
+    flash('blue');
+  }
+
+  G.selectedAction = 'move';
+  renderAll();
+  checkTurnEnd();
+}
+
+// ---- ENEMY AI ----
+function doEnemyTurn() {
+  G.turn = 'enemy';
+  document.getElementById('hud-turn').textContent = 'ENEMY TURN';
+  document.getElementById('btn-end').disabled = true;
+
+  // Reset enemy AP
+  G.enemies.forEach(e => { if(e.alive) e.ap = e.maxAp; });
+
+  let delay = 0;
+  G.enemies.forEach(e => {
+    if (!e.alive) return;
+    setTimeout(() => {
+      if (!e.alive) return;
+      enemyAct(e);
+      renderAll();
+    }, delay);
+    delay += 180;
+  });
+
+  setTimeout(() => {
+    startPlayerTurn();
+  }, delay + 300);
+}
+
+function enemyAct(enemy) {
+  // Sight check
+  const visible = G.units.filter(u => {
+    if (!u.alive || u.stealthed) return false;
+    return dist(enemy, u) <= enemy.vision && hasLOS(enemy, u);
+  });
+
+  if (visible.length > 0) {
+    enemy.alerted = true;
+    G.alarm = true;
+  }
+
+  if (enemy.alerted && visible.length > 0) {
+    // Attack closest if in range
+    visible.sort((a,b) => dist(enemy,a)-dist(enemy,b));
+    const target = visible[0];
+    if (dist(enemy, target) <= enemy.range) {
+      const inCover = G.map[target.y][target.x] === T.COVER;
+      let dmg = Math.max(0, enemy.atk - (inCover ? 1 : 0) + Math.floor(Math.random()*2) - 1);
+      target.hp -= dmg;
+      if (dmg > 0) log(`${enemy.type} attacks ${target.name} for ${dmg} dmg!`, 'bad');
+      else log(`${enemy.type} attacks ${target.name} — cover absorbs it!`, 'info');
+      flash('red');
+      if (target.hp <= 0) {
+        target.alive = false;
+        target.hp = 0;
+        log(`${target.name} has been ELIMINATED!`, 'bad');
+        checkSquadWipe();
+      }
+    } else {
+      // Move towards target
+      const path = bfs(enemy.x, enemy.y, target.x, target.y, true);
+      if (path.length > 0) {
+        const step = path[0];
+        if (!unitAt(step.x, step.y) && !enemyAt(step.x, step.y)) {
+          enemy.x = step.x; enemy.y = step.y;
+        }
+      }
+    }
+  } else if (enemy.alerted) {
+    // Last known position patrol — random walk
+    const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+    shuffle(dirs);
+    for (const [dx,dy] of dirs) {
+      const nx=enemy.x+dx, ny=enemy.y+dy;
+      if (isWalkable(nx,ny,true)) { enemy.x=nx; enemy.y=ny; break; }
+    }
+  }
+}
+
+function hasLOS(a, b) {
+  // Simple Bresenham LOS
+  let x0=a.x,y0=a.y,x1=b.x,y1=b.y;
+  const dx=Math.abs(x1-x0), dy=Math.abs(y1-y0);
+  const sx=x0<x1?1:-1, sy=y0<y1?1:-1;
+  let err=dx-dy;
+  while(true) {
+    if(x0===x1&&y0===y1) return true;
+    if(x0!==a.x||y0!==a.y) {
+      if(G.map[y0][x0]===T.WALL) return false;
+    }
+    const e2=2*err;
+    if(e2>-dy){err-=dy;x0+=sx;}
+    if(e2<dx){err+=dx;y0+=sy;}
+  }
+}
+
+function triggerEnemySight(unit) {
+  G.enemies.forEach(e => {
+    if (!e.alive) return;
+    if (dist(e, unit) <= e.vision && hasLOS(e, unit)) {
+      if (!e.alerted) {
+        e.alerted = true;
+        G.alarm = true;
+        log(`${e.type} spotted ${unit.name}! ALARM ACTIVE.`, 'warn');
+      }
+    }
+  });
+}
+
+// ---- TURN MANAGEMENT ----
+function checkTurnEnd() {
+  const anyAP = G.units.some(u => u.alive && u.ap > 0);
+  if (!anyAP) endPlayerTurn();
+}
+
+function endPlayerTurn() {
+  if (G.turn !== 'player') return;
+  G.turnNum++;
+  // Alarm escalation
+  if (G.alarm) {
+    G.alarmTimer++;
+    if (G.alarmTimer % 4 === 0) {
+      // Spawn reinforcement
+      const cell = randomFloorCellAway(G.map, G.rooms[0]);
+      if (cell) {
+        const def = ENEMY_DEFS[Math.min(G.floor-1, ENEMY_DEFS.length-1)];
+        G.enemies.push({...def, maxHp:def.hp, hp:def.hp, x:cell.x, y:cell.y, alive:true, ap:def.ap, maxAp:def.ap, alerted:true, id:G.enemies.length});
+        log(`REINFORCEMENTS arrived at sector ${cell.x},${cell.y}!`, 'bad');
+      }
+    }
+  }
+  doEnemyTurn();
+}
+
+function startPlayerTurn() {
+  G.turn = 'player';
+  G.units.forEach(u => { if(u.alive) u.ap = u.maxAp; });
+  document.getElementById('hud-turn').textContent = 'SQUAD TURN';
+  document.getElementById('btn-end').disabled = false;
+  // Auto-select first unit with AP
+  G.selectedUnit = G.units.findIndex(u => u.alive && u.ap > 0);
+  G.selectedAction = 'move';
+  log(`— Turn ${G.turnNum} — Squad ready.`, 'info');
+  renderAll();
+  updateAlarmHUD();
+}
+
+// ---- FLOOR CLEAR CHECK ----
+function checkFloorClear() {
+  const aliveUnits = G.units.filter(u => u.alive);
+  const atExit = aliveUnits.filter(u => G.map[u.y][u.x] === T.EXIT);
+  if (atExit.length === aliveUnits.length) {
+    // All alive units at exit
+    G.score += 200 * G.floor;
+    showFloorClear();
+  } else {
+    renderAll();
+  }
+}
+
+function showFloorClear() {
+  const bonus = 200 * G.floor;
+  const aliveCount = G.units.filter(u => u.alive).length;
+  document.getElementById('floor-clear-msg').innerHTML =
+    `Floor ${G.floor} cleared. Squad Kestrel extracted.<br>
+    Operatives alive: <span class="hl">${aliveCount}/3</span> &nbsp;|&nbsp;
+    Hostiles eliminated: <span class="hlg">${G.kills}</span><br>
+    Terminals hacked: <span class="hl">${G.hacks}</span><br>
+    Floor bonus: <span class="hly">+${bonus} pts</span>`;
+
+  document.getElementById('floor-clear-stats').innerHTML = `
+    <div class="stat-tile"><div class="val">${G.score}</div><div class="lbl">SCORE</div></div>
+    <div class="stat-tile"><div class="val">${G.floor}</div><div class="lbl">FLOOR</div></div>
+    <div class="stat-tile"><div class="val">${G.kills}</div><div class="lbl">KILLS</div></div>
+  `;
+  document.getElementById('scr-floor-clear').classList.add('active');
+  flash('green');
+}
+
+function nextFloor() {
+  G.floor++;
+  document.getElementById('scr-floor-clear').classList.remove('active');
+  generateFloor();
+  renderAll();
+  log(`=== FLOOR ${G.floor} — Breaching deeper... ===`, 'info');
+  log(`Hostiles increased. Stay sharp.`, 'warn');
+  updateAlarmHUD();
+}
+
+// ---- SQUAD WIPE ----
+function checkSquadWipe() {
+  if (G.units.every(u => !u.alive)) {
+    setTimeout(() => {
+      if (G.score > bestScore) {
+        bestScore = G.score;
+        try { localStorage.setItem('s7_best', bestScore); } catch(e){}
+      }
+      document.getElementById('dead-msg').innerHTML =
+        `Squad Kestrel has been neutralised on <span class="hl">Floor ${G.floor}</span>.<br>
+        The megastructure remains unbreached. For now.`;
+      document.getElementById('dead-stats').innerHTML = `
+        <div class="stat-tile"><div class="val">${G.score}</div><div class="lbl">SCORE</div></div>
+        <div class="stat-tile"><div class="val">${G.floor}</div><div class="lbl">FLOOR</div></div>
+        <div class="stat-tile"><div class="val">${G.kills}</div><div class="lbl">KILLS</div></div>
+        <div class="stat-tile"><div class="val">${bestScore}</div><div class="lbl">BEST</div></div>
+      `;
+      document.getElementById('scr-dead').classList.add('active');
+    }, 600);
+  }
+}
+
+// ---- UI UPDATES ----
+function updateUnitCards() {
+  const cont = document.getElementById('unit-cards');
+  cont.innerHTML = '';
+  G.units.forEach((u, i) => {
+    const isSel = i === G.selectedUnit;
+    const isActive = G.turn === 'player' && u.ap > 0;
+    const div = document.createElement('div');
+    div.className = `unit-card ${isSel?'selected':''} ${!u.alive?'dead':''} ${isActive&&!isSel?'':''} ${G.turn==='player'&&u.ap>0&&isSel?'active-turn':''}`;
+    div.onclick = () => { if(u.alive && G.turn==='player') { G.selectedUnit=i; G.selectedAction='move'; renderAll(); } };
+    div.innerHTML = `
+      <div class="unit-name" style="color:${u.color}">${u.name}</div>
+      <div class="unit-role">${u.role}${u.stealthed?' · <span style="color:#a259ff">STEALTHED</span>':''}</div>
+      <div class="bar-row"><div class="bar-label">HP ${u.hp}/${u.maxHp}</div><div class="bar-track"><div class="bar-fill bar-hp" style="width:${Math.max(0,u.hp/u.maxHp*100)}%"></div></div></div>
+      <div class="bar-row"><div class="bar-label">STEALTH ${u.stealth}%</div><div class="bar-track"><div class="bar-fill bar-st" style="width:${u.stealth}%"></div></div></div>
+      <div class="ap-badge">${u.alive ? '⬡'.repeat(u.ap) : '✕'}</div>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+function updateActionButtons() {
+  const unit = G.units[G.selectedUnit];
+  const cont = document.getElementById('action-btns');
+  if (!unit || !unit.alive) { cont.innerHTML = ''; return; }
+
+  const actions = [
+    { id:'move',    label:'MOVE',    cost:'1 AP', desc:'Move up to 3 tiles',         apCost:1 },
+    { id:'attack',  label:'ATTACK',  cost:'1 AP', desc:'Strike a hostile in range',   apCost:1 },
+    { id:'stealth', label:'STEALTH', cost:'1 AP', desc:`Go hidden (${unit.stealth}% chance)`, apCost:1 },
+    { id:'hack',    label:'HACK',    cost:'1 AP', desc:'Access adjacent terminal',    apCost:1 },
+    { id:'special', label:unit.special, cost:'2 AP', desc: unit.special==='BREACH'?'Double ATK strike':unit.special==='VANISH'?'Guaranteed stealth mode':'Boost allies + range hack', apCost:2 },
+  ];
+
+  cont.innerHTML = '';
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = `action-btn ${G.selectedAction===a.id?'selected-action':''}`;
+    btn.disabled = G.turn !== 'player' || unit.ap < a.apCost;
+    btn.innerHTML = `${a.label} <span class="action-cost">${a.cost}</span><span class="action-desc">${a.desc}</span>`;
+    btn.onclick = () => { G.selectedAction = a.id; renderAll(); updateActionButtons(); };
+    cont.appendChild(btn);
+  });
+}
+
+function updateIntel() {
+  const unit = G.units[G.selectedUnit];
+  if (!unit || !unit.alive) return;
+  document.getElementById('intel-unit').textContent = unit.name;
+  document.getElementById('intel-unit').style.color = unit.color;
+  const hpEl = document.getElementById('intel-hp');
+  hpEl.textContent = `${unit.hp}/${unit.maxHp}`;
+  hpEl.className = 'intel-val ' + (unit.hp < unit.maxHp*0.4 ? 'red' : unit.hp < unit.maxHp*0.7 ? 'ylw' : 'grn');
+  document.getElementById('intel-ap').textContent = `${unit.ap}/${unit.maxAp}`;
+  document.getElementById('intel-st').textContent = unit.stealthed ? 'ACTIVE' : `${unit.stealth}%`;
+  document.getElementById('intel-action').textContent = G.selectedAction.toUpperCase();
+  document.getElementById('intel-action').style.color = G.selectedAction==='attack'?'var(--red)':G.selectedAction==='hack'?'var(--purple)':'var(--cyan)';
+  document.getElementById('intel-turn').textContent = G.turn.toUpperCase() + ' ' + G.turnNum;
+  const alEl = document.getElementById('intel-alarm');
+  alEl.textContent = G.alarm ? 'ACTIVE' : 'OFF';
+  alEl.className = 'intel-val ' + (G.alarm ? 'red' : 'grn');
+  updateActionButtons();
+}
+
+function updateAlarmHUD() {
+  const alarmEl = document.getElementById('hud-alarm');
+  alarmEl.style.display = G.alarm ? 'inline' : 'none';
+  document.getElementById('hud-enemies').textContent = 'HOSTILES: ' + G.enemies.filter(e=>e.alive).length;
+  document.getElementById('hud-floor').textContent = G.floor;
+}
+
+function updateScoreBar() {
+  document.getElementById('sc-floor').textContent = G.floor;
+  document.getElementById('sc-kills').textContent = G.kills;
+  document.getElementById('sc-hacks').textContent = G.hacks;
+  document.getElementById('sc-score').textContent = G.score;
+  updateAlarmHUD();
+}
+
+// ---- LOG ----
+function log(msg, cls='') {
+  const box = document.getElementById('logBox');
+  const el = document.createElement('div');
+  el.className = 'log-entry ' + cls;
+  el.textContent = '> ' + msg;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+  // Keep max 60 entries
+  while (box.children.length > 60) box.removeChild(box.firstChild);
+}
+
+// ---- HELPERS ----
+function flash(type) {
+  const el = document.getElementById('flash');
+  el.className = 'flash ' + type + ' show';
+  setTimeout(() => el.className = 'flash', 200);
+}
+
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+
+// Resize canvas to fit
+function resizeCanvas() {
+  const canvas = document.getElementById('mapCanvas');
+  const maxW = Math.min(window.innerWidth - 460, 484);
+  const scale = maxW / 484;
+  canvas.style.width = Math.round(484 * Math.max(0.6, scale)) + 'px';
+  canvas.style.height = Math.round(484 * Math.max(0.6, scale)) + 'px';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+</script>
+</body>
+</html>
