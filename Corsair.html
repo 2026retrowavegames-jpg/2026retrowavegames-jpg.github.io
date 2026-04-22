@@ -8,28 +8,6 @@
 <meta name="robots" content="index, follow" />
 
 <style>
-  .main-menu-btn {
-    position: fixed;      /* stays on the page, not inside game */
-    top: 15px;
-    left: 40px;
-    padding: 8px 14px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 14px;
-    letter-spacing: 1px;
-    color: #ff66cc;
-    background: rgba(0,0,0,0.4);
-    border: 1px solid #ff66cc;
-    border-radius: 4px;
-    cursor: pointer;
-    z-index: 99999;       /* above everything */
-    transition: 0.2s ease;
-}
-
-.main-menu-btn:hover {
-    background: rgba(255,102,204,0.2);
-    box-shadow: 0 0 8px #ff66cc;
-}
-
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --c1:#01cdfe;--c2:#ff71ce;--c3:#05ffa1;--c4:#fff951;--c5:#b967ff;
@@ -183,8 +161,6 @@ canvas#main{display:block;position:fixed;inset:0}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-  <button id="mainMenuBtn" class="main-menu-btn">OTHER GAMES/button>
-
 <canvas id="main"></canvas>
 <div id="crt"></div>
 <div id="vignette"></div>
@@ -580,9 +556,6 @@ const CONVOY_FORMATION=[
 const convoys=[];
 const creditOrbs=[];
 let convoyTimer=10;
-document.getElementById("mainMenuBtn").addEventListener("click", () => {
-    window.location.href = "index.html";
-});
 
 function spawnConvoy(missionForced){
   if(systems.length<2)return null;

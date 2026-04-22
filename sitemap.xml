@@ -1,36 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-
     <url>
         <loc>https://2026retrowavegames-jpg.github.io/</loc>
+        <priority>1.0</priority>
     </url>
-
     <url>
         <loc>https://2026retrowavegames-jpg.github.io/laserpong.html</loc>
+        <priority>0.8</priority>
     </url>
-
     <url>
         <loc>https://2026retrowavegames-jpg.github.io/tetravoid.html</loc>
+        <priority>0.8</priority>
     </url>
-
     <url>
         <loc>https://2026retrowavegames-jpg.github.io/Corsair.html</loc>
+        <priority>0.8</priority>
     </url>
-    
     <url>
-        <loc>https://2026retrowavegames-jpg.github.io/neoserpent.html</loc>
+        <loc>https://2026retrowavegames-jpg.github.io/neonserpent.html</loc>
+        <priority>0.8</priority>
     </url>
-
     <url>
         <loc>https://2026retrowavegames-jpg.github.io/voidrunner.html</loc>
+        <priority>0.8</priority>
     </url>
-´
     <url>
         <loc>https://2026retrowavegames-jpg.github.io/CORSAIR_FACTIONS-Political_Simulator.html</loc>
+        <priority>0.8</priority>
     </url>
-
-        <url>
+    <url>
         <loc>https://2026retrowavegames-jpg.github.io/sector7breach.html</loc>
+        <priority>0.8</priority>
     </url>
-    
+    <url>
+        <loc>https://2026retrowavegames-jpg.github.io/Nova.html</loc>
+        <priority>0.8</priority>
+    </url>
 </urlset>
